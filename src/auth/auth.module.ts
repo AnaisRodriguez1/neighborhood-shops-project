@@ -40,6 +40,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     })
 
   ],
-  exports:[JwtStrategy, MongooseModule, PassportModule, JwtModule]
+  exports:[JwtStrategy, MongooseModule, PassportModule, JwtModule, MongooseModule]
 })
 export class AuthModule {}
