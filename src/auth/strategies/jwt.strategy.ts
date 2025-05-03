@@ -14,24 +14,28 @@ export class JwtStrategy extends PassportStrategy( Strategy ){
         @InjectModel(User.name)
         private readonly userModel: Model<User>,
         configService: ConfigService
-){
-    super({
-        secretOrKey: configService.get<string>('JWT_SECRET') ?? 'dev-secret',
-        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-        
-    });
+    ){
+        super({
+            secretOrKey: configService.get<string>('JWT_SECRET') ?? 'dev-secret',
+            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+        });
     }
 
     async validate( payload: JwtPayload ): Promise<User> {
 
-        const {email} = payload;
+        const { id } = payload;
 
-        const user = await this.userModel.findOne({email});
-        if(!user)
+        // Use findById which searches by _id by default
+        const user = await this.userModel.findById(id);
+
+        if (!user)
             throw new UnauthorizedException('Token not valid');
-        if(!user.isActive)
-            throw new UnauthorizedException('User is inactived, talk with an admin');
 
+        if (!user.isActive)
+            throw new UnauthorizedException('User is inactive, talk with an admin');
+
+        // The user object returned by Mongoose is fine to return here.
+        // Passport will attach this user object to the request.
         return user;
-    }   
+    }
 }

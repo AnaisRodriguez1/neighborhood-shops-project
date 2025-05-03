@@ -28,10 +28,13 @@ export class AuthService {
         password: bcrypt.hashSync(password,10)
       });
 
-
+      //Va a regresar un JWT de la información del usuario 
+      // (en este caso correo) sin el password
       return {
-        ...user,
-        token: this.getJwtToken({email: user.email })
+        email: user.email,
+        id:user.id,
+        name: user.name,
+        token: this.getJwtToken({ id: user.id }),
       };
 
 
@@ -43,8 +46,9 @@ export class AuthService {
   async login(loginUserDto: LoginUserDto) {
     const { password, email } = loginUserDto;
     // En Mongoose, el filtro va directo y select es un método encadenado
-    const user = await this.userModel.findOne(
-      { email }).select('email password').lean();
+    const user = await this.userModel.findOne({ email })
+    //Solicitud de datos a la base de datos
+      .select({ email: 1, password: 1, id: 1}); // 0 = no mostrar, 1 = mostrar
     
     if(!user){
       throw new UnauthorizedException('Credentials are not valid (email)')
@@ -52,20 +56,17 @@ export class AuthService {
     if(!bcrypt.compareSync(password,user.password)){
       throw new UnauthorizedException('Credentials are not valid (password)')
     }
-
+    //retorna el jwt token
     return {
-      ...user,
-      token: this.getJwtToken({email: user.email })
+      id: user.id,
+      token: this.getJwtToken({id: user.id})
     };
-    // Regresar el JWT
-
   }
 
   private getJwtToken( payload: JwtPayload ){
     //Generar el token por servicio creado por mí
     const token = this.jwtService.sign( payload );
     return token;
-
 
   }
 

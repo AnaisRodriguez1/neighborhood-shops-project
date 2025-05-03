@@ -1,5 +1,7 @@
+import { mongo } from "mongoose";
+
 export interface JwtPayload {
-    email:string;
+    id:mongo.ObjectId
     
     //TODO: añadir todo lo que quieran grabar.
 }
