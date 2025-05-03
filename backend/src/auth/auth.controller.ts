@@ -57,7 +57,7 @@ export class AuthController {
 
   
   @Get('private3')
-  @Auth(ValidRoles.presidente)
+  @Auth()
   testingPrivateRoute3(
     @GetUser() user: User
   ){
