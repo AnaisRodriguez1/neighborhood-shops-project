@@ -59,7 +59,16 @@ export class AuthService {
     //retorna el jwt token
     return {
       id: user.id,
+      name: user.name,
+      role: user.roles,
       token: this.getJwtToken({id: user.id})
+    };
+  }
+
+  checkAuthStatus(user: User) {
+    return{
+      ...user.toJSON(),
+      token: this.getJwtToken({ id: user.id }),
     };
   }
 
