@@ -1,5 +1,4 @@
 import { Schema } from "mongoose";
-
 /**
  * Aplica una transformación estándar para todos los esquemas:
  * - Remueve el campo _id y lo reemplaza por id

@@ -67,7 +67,13 @@ body {
   background-color: #fdd835;
 }
 
+.error-list {
+  margin-top: 1rem;
+  padding-left: 1.5rem;
+}
+
 .error {
   color: red;
-  margin-top: 1rem;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
 }

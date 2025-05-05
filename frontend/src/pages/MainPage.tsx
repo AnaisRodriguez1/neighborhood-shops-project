@@ -8,12 +8,21 @@ export function MainPage() {
     navigate('/login');
   };
 
+  const goToRegister = () => {
+    navigate('/register');
+  };
+
   return (
     <div className="container">
       <h1 className="title">Bienvenido</h1>
-      <button className="button" onClick={goToLogin}>
-        Ir al Login
-      </button>
+      <div style={{ display: 'flex', gap: '1rem' }}>
+        <button className="button" onClick={goToLogin}>
+          Ingresar
+        </button>
+        <button className="button" onClick={goToRegister}>
+          Registrarse
+        </button>
+      </div>
     </div>
   );
 }

@@ -3,15 +3,15 @@ import { IsEmail, IsString, Matches, MaxLength, MinLength } from "class-validato
 export class LoginUserDto{
 
     @IsString()
-    @IsEmail()
+    @IsEmail({},{ message: 'El correo debe tener un formato válido.' })
     email:string;
 
     @IsString()
-    @MinLength(6)
-    @MaxLength(50)
+    @MinLength(6,{ message: '' })
+    @MaxLength(50,{ message: '' })
     @Matches(
         /(?:(?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
-        message: 'The password must have a Uppercase, lowercase letter and a number'
+        message: 'La contraseña debe tener una letra mayúscula, una letra minúscula y un número.'
     })
     password:string;
 }

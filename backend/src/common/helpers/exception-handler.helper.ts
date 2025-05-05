@@ -1,9 +1,9 @@
 import { BadRequestException, InternalServerErrorException } from "@nestjs/common";
 
 export function handleExceptions(error: any) {
-    if (error.code === 11000) {
-      throw new BadRequestException(`This Object ${JSON.stringify(error.keyValue)} exists in BD`);
-    }
-    console.log(error);
-    throw new InternalServerErrorException(`Can't create this Object - Check Server logs`)
+  if (error.code === 11000) {
+    throw new BadRequestException('El correo ya está registrado.');
   }
+  console.error(error);
+  throw new InternalServerErrorException('No se pudo procesar la solicitud - Revisa los logs del servidor.');
+}

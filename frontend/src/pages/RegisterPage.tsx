@@ -1,34 +1,25 @@
-// src/pages/LoginPage.tsx
+// src/pages/RegisterPage.tsx
 import { useState } from 'react';
-import { loginRequest, checkAuthStatusRequest } from '../api/authApi';
+import { registerRequest } from '../api/authApi';
+import { useNavigate } from 'react-router-dom';
 
-export function LoginPage() {
+export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<string[]>([]); // ahora es un array de errores
+  const [name, setName] = useState('');
+  const [errors, setErrors] = useState<string[]>([]);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const loginData = await loginRequest(email, password);
-      localStorage.setItem('token', loginData.token);
-
-      const userData = await checkAuthStatusRequest(loginData.token);
-
-      if (Array.isArray(userData.roles) && userData.roles.length > 0) {
-        localStorage.setItem('role', userData.roles[0]);
-      } else {
-        localStorage.setItem('role', 'SinRol');
-      }
-
-      localStorage.setItem('name', userData.name);
-      localStorage.setItem('email', userData.email);
-
-      window.location.href = '/home';
+      await registerRequest({ email, password, name });
+      // Registro exitoso → ir al login
+      navigate('/login');
     } catch (err: any) {
       if (err.response && err.response.data && Array.isArray(err.response.data.message)) {
-        setErrors(err.response.data.message); // varios errores del backend
+        setErrors(err.response.data.message); // varios errores
       } else if (err.response && err.response.data && err.response.data.message) {
         setErrors([err.response.data.message]); // un solo error
       } else {
@@ -40,8 +31,15 @@ export function LoginPage() {
   return (
     <div className="container">
       <div className="card">
-        <h1 className="title">Login</h1>
+        <h1 className="title">Register</h1>
         <form onSubmit={handleSubmit} className="form" noValidate>
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="input"
+          />
           <input
             type="email"
             placeholder="Email"
@@ -56,7 +54,7 @@ export function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="input"
           />
-          <button type="submit" className="button">Log In</button>
+          <button type="submit" className="button">Register</button>
 
           {/* Mostrar lista de errores */}
           {errors.length > 0 && (
