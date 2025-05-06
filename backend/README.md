@@ -22,15 +22,6 @@ docker-compose up -d
 ```
 7. Levantar: ```npm start:dev```
 
-### Adicionales:
-Si se quieren modificar / añadir recursos: Shops, Products, etc... 
-
-Instalar:
-
- ```npm i class-validator class-transformer```
-
-```npm i @nestjs/mongoose mongoose ```
-
 ## Stack usado
 * MongoDB
 * Nest
