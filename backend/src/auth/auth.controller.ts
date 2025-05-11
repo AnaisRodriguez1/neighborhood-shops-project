@@ -32,9 +32,9 @@ export class AuthController {
   }
 
   @Get('private')
-  @UseGuards( AuthGuard() )
-  testingPrivateRoute(
-    //@Req() request: Express.Request)
+  @RoleProtected(ValidRoles.presidente)
+  @UseGuards( AuthGuard(), UserRoleGuard )
+  testingPrivateRoute2(
     @GetUser() user: User,
     @GetUser('id') id: string,
     @RawHeaders() rawHeaders: string[],
@@ -46,32 +46,6 @@ export class AuthController {
       user,
       id,
       rawHeaders,
-      
     }
   }
-
-  @Get('private2')
-  @RoleProtected(ValidRoles.presidente)
-  @UseGuards( AuthGuard(), UserRoleGuard )
-  testingPrivateRoute2(
-    @GetUser() user: User
-  ){
-    return {
-      ok: true,
-      user,
-    }
-  }
-
-  
-  @Get('private3')
-  @Auth()
-  testingPrivateRoute3(
-    @GetUser() user: User
-  ){
-    return {
-      ok: true,
-      user,
-    }
-  }
-
 }

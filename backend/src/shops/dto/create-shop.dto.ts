@@ -1,53 +1,55 @@
 import { Transform } from "class-transformer";
-import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, Min } from "class-validator";
+import { IsArray, IsBoolean, IsIn, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, Matches, Min } from "class-validator";
 import { Types } from "mongoose";
 
+const CATEGORY_LIST = [
+    'comida','electronica','ropa','libros','hogar',
+    'mascotas','belleza','farmacia','papeleria',
+    'ferreteria','jardineria','juguetes','deportes','otro'
+  ] as const;
+  type Category = typeof CATEGORY_LIST[number];
+
+
 export class CreateShopDto {
-    @IsNotEmpty()
-    @IsString()
-    ownerId: Types.ObjectId;
 
-    @IsString()
-    @IsNotEmpty()
-    @Transform(({ value }) => value
+    @IsString({ message: 'El nombre debe ser un texto.' })
+    @IsNotEmpty({ message: 'El nombre es obligatorio.' })
+    @Transform(({ value }) =>
+      String(value)
         .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' '))
-    name:string;
+        .map(
+          word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+        )
+        .join(' '),
+    )
+    name: string;
 
     @IsOptional()
-    @IsString()
-    description?:string;
+    @IsString({ message: 'La descripción debe ser un texto.' })
+    description?: string;    
 
     @IsOptional()
-    @IsBoolean()
+    @IsBoolean({ message: 'La opción de delivery disponible debe ser verdadera o falsa.' })
     deliveryAvailable?: boolean;
   
     @IsOptional()
-    @IsBoolean()
+    @IsBoolean({ message: 'La opción de recoger en tienda debe ser verdadera o falsa.' })
     pickupAvailable?: boolean;
 
-    @IsNotEmpty()
-    @IsString()
-    address: string;
+    @IsString({ message: 'La dirección debe ser un texto.' })
+    @IsNotEmpty({ message: 'La dirección es obligatoria.' })
+    address: string;  
   
     @IsOptional()
-    @IsNumber()
-    @Min(0)
-    @IsPositive()
-    score?: number;
-  
-    @IsOptional()
-    @IsNumber()
-    @IsPositive()
-    @Min(0)
-    totalSales?: number;
-  
-    @IsOptional()
-    @IsArray()
-    categories?: string[];
-  
-    @IsOptional()
-    @IsBoolean()
-    isActive?: boolean;
+    @Transform(({ value }) =>
+      typeof value === 'string'
+        ? value.split(',').map(tag => tag.trim().toLowerCase())
+        : value,
+    )
+    @IsArray({ message: 'Las categorías deben ir separadas por comas.' })
+    @IsIn(CATEGORY_LIST, {
+      each: true,
+      message: `Cada categoría debe ser una de: ${CATEGORY_LIST.join(', ')}.`,
+    })
+    categories?: Category[];
 }

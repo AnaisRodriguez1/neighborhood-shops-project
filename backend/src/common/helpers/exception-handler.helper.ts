@@ -1,9 +1,21 @@
 import { BadRequestException, InternalServerErrorException } from "@nestjs/common";
 
-export function handleExceptions(error: any) {
+export function handleExceptions(
+  error: any,
+  entityName: string = 'recurso',
+  operation: string = 'procesar'
+) {
+  // Error de duplicado en Mongo (índice único)
   if (error.code === 11000) {
-    throw new BadRequestException('El correo ya está registrado.');
+    throw new BadRequestException(
+      `No se pudo ${operation} ${entityName}: ya existe un registro duplicado.`
+    );
   }
+
   console.error(error);
-  throw new InternalServerErrorException('No se pudo procesar la solicitud - Revisa los logs del servidor.');
+
+  // Excepción genérica
+  throw new InternalServerErrorException(
+    `Ocurrió un error al ${operation} ${entityName}.`
+  );
 }

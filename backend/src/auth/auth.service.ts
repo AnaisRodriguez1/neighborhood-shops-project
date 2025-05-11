@@ -39,7 +39,7 @@ export class AuthService {
 
 
     } catch (error) {
-      handleExceptions(error);
+      handleExceptions(error, 'el usuario', 'identificar');
     }
   }
 
@@ -78,5 +78,4 @@ export class AuthService {
     return token;
 
   }
-
 }

@@ -1,12 +1,14 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Param, ParseUUIDPipe } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product } from './entities/product.entity';
 import { Model } from 'mongoose';
 import { handleExceptions } from 'src/common/helpers/exception-handler.helper';
+import { Auth } from 'src/auth/decorators';
 
 @Injectable()
+@Auth()
 export class ProductsService {
 
   constructor(
@@ -16,19 +18,42 @@ export class ProductsService {
 
   async create(createProductDto: CreateProductDto) {
     try {
+
+      if(!createProductDto.slug){
+        createProductDto.slug = createProductDto.name
+        .trim()
+        .toLowerCase()
+        .replaceAll(' ','_')
+        .replaceAll('-','_')
+        .replaceAll("'",'');
+      }
+      else{
+        createProductDto.slug = createProductDto.name
+        .trim()
+        .toLowerCase()
+        .replaceAll(' ','_')
+        .replaceAll('-','_')
+        .replaceAll("'",'');
+      }
+
       const product = await this.productModel.create(createProductDto);
+
       return product;
     } catch (error) {
-        handleExceptions(error);
+        handleExceptions(error, 'el producto','crear');
     }
   }
 
   findAll() {
-    return `This action returns all products`;
+    return this.productModel.find({});
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
+  async findOne(id: string) {
+    const product = await this.productModel.findById(id);
+    if(!product)
+      throw new BadRequestException(`Product with id ${id} not found`);
+    
+    return product;
   }
 
   update(id: number, updateProductDto: UpdateProductDto) {
@@ -38,5 +63,4 @@ export class ProductsService {
   remove(id: number) {
     return `This action removes a #${id} product`;
   }
-
 }

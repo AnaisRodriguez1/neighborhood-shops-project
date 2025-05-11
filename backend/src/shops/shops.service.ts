@@ -5,8 +5,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Shop } from './entities/shop.entity';
 import { Model } from 'mongoose';
 import { handleExceptions } from 'src/common/helpers/exception-handler.helper';
+import { Auth } from 'src/auth/decorators';
 
 @Injectable()
+@Auth()
 export class ShopsService {
 
   constructor(
@@ -14,14 +16,13 @@ export class ShopsService {
     private readonly shopModel: Model<Shop>
   )
   {}
-
-
+  
   async create(createShopDto: CreateShopDto) {
     try {
       const shop = await this.shopModel.create(createShopDto);
       return shop;
     } catch (error) {
-      handleExceptions(error);
+      handleExceptions(error,'la tienda','crear');
     }
   }
 
