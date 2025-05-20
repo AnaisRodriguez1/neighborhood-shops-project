@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:3000/api/auth',
+  baseURL: 'https://neighborhood-shops-project-53k4.vercel.app/api/auth',
   withCredentials: true, // 👈 esto es correcto si manejas cookies (aunque usando Bearer Token no es estrictamente necesario)
 });
 
