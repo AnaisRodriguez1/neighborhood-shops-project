@@ -6,11 +6,14 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-      origin: '*',                   // permite cualquier dominio
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      allowedHeaders: '*',           // permite cualquier cabecera
-      credentials: false,            // deshabilita cookies / auth headers cross-origin
-    });
+    origin: [
+      'https://neighborhood-shops-project.vercel.app',
+      'https://neighborhood-shops-project-53k4.vercel.app'
+    ],
+    credentials: true,              // permite enviar cookies/sesiones
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization'
+  });
 
   app.setGlobalPrefix('api');
 
