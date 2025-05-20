@@ -1,22 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import axios, { AxiosInstance } from 'axios';
-import { UsersResponse } from './interfaces/users.response.interface';
 import { InjectModel } from '@nestjs/mongoose';
-import { User } from 'src/auth/entities/user.entity';
+import axios, { AxiosInstance } from 'axios';
 import { Model } from 'mongoose';
-
+import { Product } from 'src/products/entities/product.entity';
+import { ProductsService } from 'src/products/products.service';
 @Injectable()
 export class SeedService {
 
   private readonly axios : AxiosInstance = axios;
 
   constructor (
-    @InjectModel( User.name )
-    private readonly userModel : Model<User>,
+    @InjectModel(Product.name)
+    private readonly productService : ProductsService
   ){}
 
   async executeSeed() {
-    const {data} = await axios.get<UsersResponse>('https://dummyjson.com/users?limit=5');
+    await this.productService.deleteAllProducts()
 
     return 'Seed Executed';
   }

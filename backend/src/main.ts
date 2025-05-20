@@ -6,9 +6,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: 'http://localhost:5173', // frontend Vite
-    credentials: true, // por si envías cookies o Authorization headers
-  });
+      origin: '*',                   // permite cualquier dominio
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      allowedHeaders: '*',           // permite cualquier cabecera
+      credentials: false,            // deshabilita cookies / auth headers cross-origin
+    });
 
   app.setGlobalPrefix('api');
 

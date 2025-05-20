@@ -1,4 +1,4 @@
-import { Transform } from "class-transformer";
+import { Transform, Type } from "class-transformer";
 import { ArrayNotEmpty, IsArray, IsNumber, IsOptional, IsString, IsUrl, MaxLength, Min, MinLength } from "class-validator";
 
 export class CreateProductDto {
@@ -20,6 +20,7 @@ export class CreateProductDto {
     description?: string;
 
     @IsNumber({}, { message: 'El precio debe ser un número.' })
+    @Type(()=> Number)
     @Min(0, { message: 'El precio no puede ser negativo.' })
     price: number;
 
@@ -36,12 +37,14 @@ export class CreateProductDto {
     tags?: string[];
 
     @IsOptional()
+    @Type(()=> Number)
     @IsNumber({}, { message: 'Las calorías deben ser un número.' })
     @Min(0, { message: 'Las calorías no pueden ser negativas.' })
     calories?: number;
 
     @IsOptional()
     @IsNumber({}, { message: 'El stock debe ser un número.' })
+    @Type(()=> Number)
     @Min(0, { message: 'El stock no puede ser negativo.' })
     stock?: number;
 

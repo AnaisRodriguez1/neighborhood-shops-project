@@ -6,6 +6,7 @@ import { Product } from './entities/product.entity';
 import { Model } from 'mongoose';
 import { handleExceptions } from 'src/common/helpers/exception-handler.helper';
 import { Auth } from 'src/auth/decorators';
+import { PaginationDto } from '../common/dtos/pagination.dto';
 
 @Injectable()
 @Auth()
@@ -25,7 +26,8 @@ export class ProductsService {
         .toLowerCase()
         .replaceAll(' ','_')
         .replaceAll('-','_')
-        .replaceAll("'",'');
+        .replaceAll("'",'')
+        .replaceAll(".","")
       }
       else{
         createProductDto.slug = createProductDto.name
@@ -33,7 +35,8 @@ export class ProductsService {
         .toLowerCase()
         .replaceAll(' ','_')
         .replaceAll('-','_')
-        .replaceAll("'",'');
+        .replaceAll("'",'')
+        .replaceAll(".","")
       }
 
       const product = await this.productModel.create(createProductDto);
@@ -44,8 +47,17 @@ export class ProductsService {
     }
   }
 
-  findAll() {
-    return this.productModel.find({});
+  findAll(paginationDto : PaginationDto) {
+
+    const {limit =10, offset = 0} = paginationDto;
+
+    return this.productModel.find()
+      .limit( limit )
+      .skip( offset )
+      .sort({
+        name:1
+      })
+      .select('-_id -createdAt -updatedAt')
   }
 
   async findOne(id: string) {
@@ -56,11 +68,23 @@ export class ProductsService {
     return product;
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
+  update(id: string, updateProductDto: UpdateProductDto) {
     return `This action updates a #${id} product`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  async remove(id: string) {
+    const product = await this.findOne(id);
+    await this.productModel.findByIdAndDelete(id);
   }
+
+  async deleteAllProducts() {
+  try {
+    const result = await this.productModel.deleteMany({});
+    // result.deletedCount tiene el número de documentos eliminados
+    return { deletedCount: result.deletedCount };
+  } catch (error) {
+    handleExceptions(error);
+  }
+}
+  
 }
