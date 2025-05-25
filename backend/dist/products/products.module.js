@@ -28,10 +28,6 @@ exports.ProductsModule = ProductsModule = __decorate([
                 }
             ]),
             auth_module_1.AuthModule,
-        ],
-        exports: [
-            mongoose_1.MongooseModule,
-            products_service_1.ProductsService
         ]
     })
 ], ProductsModule);

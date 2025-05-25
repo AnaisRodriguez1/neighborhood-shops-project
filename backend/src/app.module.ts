@@ -12,7 +12,13 @@ import { SeedModule } from './seed/seed.module';
   imports: [
     ConfigModule.forRoot(),
 
-    MongooseModule.forRoot('mongodb://UserATMDB:MySecretPassWordProyectoATM@localhost:27017/ATMBD?authSource=admin', {
+    MongooseModule.forRoot((() => {
+      const uri = process.env.MONGODB_URI;
+      if (!uri) {
+        throw new Error('MONGODB_URI environment variable is not defined');
+      }
+      return uri;
+    })(), {
       onConnectionCreate: (connection: Connection) => {
         connection.on('connected', () => console.log('connected'));
         connection.on('open', () => console.log('open'));

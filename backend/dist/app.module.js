@@ -15,11 +15,6 @@ const shops_module_1 = require("./shops/shops.module");
 const common_module_1 = require("./common/common.module");
 const auth_module_1 = require("./auth/auth.module");
 const seed_module_1 = require("./seed/seed.module");
-require("dotenv/config");
-const mongoUri = process.env.MONGODB_URI;
-if (!mongoUri) {
-    throw new Error('MONGODB_URI environment variable is not set');
-}
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -27,7 +22,13 @@ exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
             config_1.ConfigModule.forRoot(),
-            mongoose_1.MongooseModule.forRoot(mongoUri, {
+            mongoose_1.MongooseModule.forRoot((() => {
+                const uri = process.env.MONGODB_URI;
+                if (!uri) {
+                    throw new Error('MONGODB_URI environment variable is not defined');
+                }
+                return uri;
+            })(), {
                 onConnectionCreate: (connection) => {
                     connection.on('connected', () => console.log('connected'));
                     connection.on('open', () => console.log('open'));

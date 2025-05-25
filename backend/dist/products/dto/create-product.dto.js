@@ -44,7 +44,6 @@ __decorate([
 ], CreateProductDto.prototype, "description", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)({}, { message: 'El precio debe ser un número.' }),
-    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.Min)(0, { message: 'El precio no puede ser negativo.' }),
     __metadata("design:type", Number)
 ], CreateProductDto.prototype, "price", void 0);
@@ -61,7 +60,6 @@ __decorate([
 ], CreateProductDto.prototype, "tags", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)({}, { message: 'Las calorías deben ser un número.' }),
     (0, class_validator_1.Min)(0, { message: 'Las calorías no pueden ser negativas.' }),
     __metadata("design:type", Number)
@@ -69,7 +67,6 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)({}, { message: 'El stock debe ser un número.' }),
-    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.Min)(0, { message: 'El stock no puede ser negativo.' }),
     __metadata("design:type", Number)
 ], CreateProductDto.prototype, "stock", void 0);

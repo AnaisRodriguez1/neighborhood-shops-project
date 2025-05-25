@@ -32,8 +32,7 @@ let ProductsService = class ProductsService {
                     .toLowerCase()
                     .replaceAll(' ', '_')
                     .replaceAll('-', '_')
-                    .replaceAll("'", '')
-                    .replaceAll(".", "");
+                    .replaceAll("'", '');
             }
             else {
                 createProductDto.slug = createProductDto.name
@@ -41,8 +40,7 @@ let ProductsService = class ProductsService {
                     .toLowerCase()
                     .replaceAll(' ', '_')
                     .replaceAll('-', '_')
-                    .replaceAll("'", '')
-                    .replaceAll(".", "");
+                    .replaceAll("'", '');
             }
             const product = await this.productModel.create(createProductDto);
             return product;
@@ -51,15 +49,8 @@ let ProductsService = class ProductsService {
             (0, exception_handler_helper_1.handleExceptions)(error, 'el producto', 'crear');
         }
     }
-    findAll(paginationDto) {
-        const { limit = 10, offset = 0 } = paginationDto;
-        return this.productModel.find()
-            .limit(limit)
-            .skip(offset)
-            .sort({
-            name: 1
-        })
-            .select('-_id -createdAt -updatedAt');
+    findAll() {
+        return this.productModel.find({});
     }
     async findOne(id) {
         const product = await this.productModel.findById(id);
@@ -70,18 +61,8 @@ let ProductsService = class ProductsService {
     update(id, updateProductDto) {
         return `This action updates a #${id} product`;
     }
-    async remove(id) {
-        const product = await this.findOne(id);
-        await this.productModel.findByIdAndDelete(id);
-    }
-    async deleteAllProducts() {
-        try {
-            const result = await this.productModel.deleteMany({});
-            return { deletedCount: result.deletedCount };
-        }
-        catch (error) {
-            (0, exception_handler_helper_1.handleExceptions)(error);
-        }
+    remove(id) {
+        return `This action removes a #${id} product`;
     }
 };
 exports.ProductsService = ProductsService;

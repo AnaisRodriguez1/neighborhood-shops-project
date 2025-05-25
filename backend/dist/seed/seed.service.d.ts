@@ -1,7 +1,8 @@
-import { ProductsService } from 'src/products/products.service';
+import { User } from 'src/auth/entities/user.entity';
+import { Model } from 'mongoose';
 export declare class SeedService {
-    private readonly productService;
+    private readonly userModel;
     private readonly axios;
-    constructor(productService: ProductsService);
+    constructor(userModel: Model<User>);
     executeSeed(): Promise<string>;
 }

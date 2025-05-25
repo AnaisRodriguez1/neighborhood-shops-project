@@ -14,25 +14,25 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SeedService = void 0;
 const common_1 = require("@nestjs/common");
-const mongoose_1 = require("@nestjs/mongoose");
 const axios_1 = require("axios");
-const product_entity_1 = require("../products/entities/product.entity");
-const products_service_1 = require("../products/products.service");
+const mongoose_1 = require("@nestjs/mongoose");
+const user_entity_1 = require("../auth/entities/user.entity");
+const mongoose_2 = require("mongoose");
 let SeedService = class SeedService {
-    productService;
+    userModel;
     axios = axios_1.default;
-    constructor(productService) {
-        this.productService = productService;
+    constructor(userModel) {
+        this.userModel = userModel;
     }
     async executeSeed() {
-        await this.productService.deleteAllProducts();
+        const { data } = await axios_1.default.get('https://dummyjson.com/users?limit=5');
         return 'Seed Executed';
     }
 };
 exports.SeedService = SeedService;
 exports.SeedService = SeedService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, mongoose_1.InjectModel)(product_entity_1.Product.name)),
-    __metadata("design:paramtypes", [products_service_1.ProductsService])
+    __param(0, (0, mongoose_1.InjectModel)(user_entity_1.User.name)),
+    __metadata("design:paramtypes", [mongoose_2.Model])
 ], SeedService);
 //# sourceMappingURL=seed.service.js.map
