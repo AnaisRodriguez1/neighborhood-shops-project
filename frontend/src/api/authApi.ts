@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:3000/api/auth',
+  baseURL: 'https://backend-neighborhood-shops-project-production.up.railway.app/api/auth', // Cambia esto por la URL de tu backend
   withCredentials: true, // 👈 esto es correcto si manejas cookies (aunque usando Bearer Token no es estrictamente necesario)
 });
 
