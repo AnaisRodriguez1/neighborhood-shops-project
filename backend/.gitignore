@@ -6,6 +6,7 @@
 mongo/
 
 .env
+/node_modules
 
 
 # Logs
