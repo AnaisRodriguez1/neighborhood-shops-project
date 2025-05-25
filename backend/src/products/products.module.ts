@@ -16,10 +16,6 @@ import { AuthModule } from 'src/auth/auth.module';
       }
     ]),
     AuthModule,
-  ],
-  exports:[
-    MongooseModule,
-    ProductsService
   ]
 })
 export class ProductsModule {}

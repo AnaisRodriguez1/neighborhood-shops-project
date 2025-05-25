@@ -48,7 +48,7 @@ export class AuthService {
     // En Mongoose, el filtro va directo y select es un método encadenado
     const user = await this.userModel.findOne({ email })
     //Solicitud de datos a la base de datos
-      .select({ email: 1, password: 1, id: 1}); 
+      .select({ email: 1, password: 1, id: 1}); // 0 = no mostrar, 1 = mostrar
     
     if(!user){
       throw new UnauthorizedException('Credentials are not valid (email)')
