@@ -6,11 +6,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-      origin: '*',                   // permite cualquier dominio
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      allowedHeaders: '*',           // permite cualquier cabecera
-      credentials: false,            // deshabilita cookies / auth headers cross-origin
-    });
+    origin: 'https://frontend-neighborhood-shops-project-production.up.railway.app',
+    credentials: true,
+  });
 
   app.setGlobalPrefix('api');
 
@@ -21,7 +19,7 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(process.env.PORT || 3000);
   console.log(`Server running on port ${process.env.PORT}`);
 }
 bootstrap();
