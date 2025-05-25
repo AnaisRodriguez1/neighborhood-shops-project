@@ -1,13 +1,16 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config'; 
-import { ProductsModule } from './products/products.module';
 import { Connection } from 'mongoose';
-import { ShopsModule } from './shops/shops.module';
+import 'dotenv/config';
+
+import { ProductsModule } from './products/products.module';
 import { CommonModule } from './common/common.module';
+import { ShopsModule } from './shops/shops.module';
 import { AuthModule } from './auth/auth.module';
 import { SeedModule } from './seed/seed.module';
-import 'dotenv/config';
+import { EnvConfiguration } from './common/config/env.config';
+
 
 const mongoUri = process.env.MONGODB_URI;
 
@@ -17,7 +20,9 @@ if (!mongoUri) {
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      load: [ EnvConfiguration ],
+  }),
 
     MongooseModule.forRoot(mongoUri, {
       onConnectionCreate: (connection: Connection) => {
@@ -29,6 +34,7 @@ if (!mongoUri) {
     
         return connection;
       },
+      dbName: 'neighborhood-shops-project',
     }),
 
     ProductsModule,

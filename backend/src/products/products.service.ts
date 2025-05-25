@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Param, ParseUUIDPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -8,14 +10,23 @@ import { handleExceptions } from 'src/common/helpers/exception-handler.helper';
 import { Auth } from 'src/auth/decorators';
 import { PaginationDto } from '../common/dtos/pagination.dto';
 
+
 @Injectable()
 @Auth()
 export class ProductsService {
 
+  private defaultLimit: number;
+  private defaultOffset: number;
+
   constructor(
     @InjectModel(Product.name)
-    private readonly productModel: Model<Product>
-  ){}
+    private readonly productModel: Model<Product>,
+    private readonly configService : ConfigService,
+    
+  ){
+    this.defaultLimit = this.configService.get<number>('defaultLimit') || 10;
+    this.defaultOffset = this.configService.get<number>('defaultOffset') || 0;
+  }
 
   async create(createProductDto: CreateProductDto) {
     try {
@@ -49,7 +60,7 @@ export class ProductsService {
 
   findAll(paginationDto : PaginationDto) {
 
-    const {limit =10, offset = 0} = paginationDto;
+    const { limit = this.defaultLimit, offset = this.defaultOffset } = paginationDto;
 
     return this.productModel.find()
       .limit( limit )
