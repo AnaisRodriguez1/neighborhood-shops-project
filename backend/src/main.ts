@@ -19,7 +19,16 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(process.env.PORT || 3000);
-  console.log(`Server running on port ${process.env.PORT}`);
+  const PORT = process.env.PORT
+
+  await app.listen( PORT || 3000);
+  
+  if(PORT == "3000"){
+    console.log(`Server running on port localhost:${process.env.PORT_TEST}`);
+  }
+  else{
+    console.log(`Server running on port ${PORT}`);
+  }
+  
 }
 bootstrap();
