@@ -19,7 +19,7 @@ async function bootstrap() {
     }),
   );
 
-  const PORT = process.env.PORT_TEST
+  const PORT = process.env.PORT
 
   await app.listen( PORT || 3000);
   
