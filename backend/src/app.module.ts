@@ -18,6 +18,7 @@ if (!mongoUri) {
   throw new Error('MONGODB_URI environment variable is not set');
 }
 console.log('Mongo URI:', mongoUri);
+
 @Module({
   imports: [
     ConfigModule.forRoot({
