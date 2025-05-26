@@ -1,11 +1,11 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Param, ParseUUIDPipe } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, Param, ParseUUIDPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product } from './entities/product.entity';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { handleExceptions } from 'src/common/helpers/exception-handler.helper';
 import { Auth } from 'src/auth/decorators';
 import { PaginationDto } from '../common/dtos/pagination.dto';
@@ -79,8 +79,33 @@ export class ProductsService {
     return product;
   }
 
-  update(id: string, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
+  async update(id: string, updateProductDto: UpdateProductDto) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException(`El ID '${id}' no es válido.`);
+    }
+
+    const product = await this.productModel.findById(id);
+    if (!product) {
+      throw new NotFoundException(`No se encontró un producto con ID '${id}'.`);
+    }
+
+    // ❌ Protege campos que NO deben ser actualizados
+    delete (updateProductDto as any).slug;
+    delete (updateProductDto as any).shopId;
+    delete (updateProductDto as any).rating;
+    delete (updateProductDto as any).reviews;
+
+    // ✅ Aplica campos actualizables
+    Object.assign(product, updateProductDto);
+
+    try {
+      return await product.save(); // mantiene hooks como el de slug si cambia name
+    } catch (error) {
+      if (error.code === 11000) {
+        throw new BadRequestException(`Ya existe otro producto con datos similares.`);
+      }
+      handleExceptions(error, 'el producto', 'actualizar');
+    }
   }
 
   async remove(id: string) {

@@ -28,11 +28,13 @@ export class ProductsController {
   }
 
   @Patch(':id')
+  @Auth(ValidRoles.locatario, ValidRoles.presidente)
   update(@Param('id', ParseObjectIdPipe) id: string, @Body() updateProductDto: UpdateProductDto) {
     return this.productsService.update(id, updateProductDto);
   }
 
   @Delete(':id')
+  @Auth(ValidRoles.locatario, ValidRoles.presidente)
   remove(@Param('id', ParseObjectIdPipe) id: string) {
     return this.productsService.remove(id);
   }
