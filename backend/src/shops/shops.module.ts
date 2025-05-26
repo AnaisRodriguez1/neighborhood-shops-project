@@ -16,6 +16,10 @@ import { AuthModule } from 'src/auth/auth.module';
           }
         ]),
         AuthModule
+  ],
+  exports:[
+    MongooseModule,
+    ShopsService
   ]
 })
 export class ShopsModule {}

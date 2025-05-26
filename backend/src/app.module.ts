@@ -12,12 +12,12 @@ import { SeedModule } from './seed/seed.module';
 import { EnvConfiguration } from './common/config/env.config';
 
 
-const mongoUri = process.env.MONGODB_URI;
+const mongoUri = process.env.MONGODB_TEST;
 
 if (!mongoUri) {
   throw new Error('MONGODB_URI environment variable is not set');
 }
-
+console.log('Mongo URI:', mongoUri);
 @Module({
   imports: [
     ConfigModule.forRoot({

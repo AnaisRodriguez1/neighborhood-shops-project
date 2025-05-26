@@ -87,15 +87,4 @@ export class ProductsService {
     const product = await this.findOne(id);
     await this.productModel.findByIdAndDelete(id);
   }
-
-  async deleteAllProducts() {
-  try {
-    const result = await this.productModel.deleteMany({});
-    // result.deletedCount tiene el número de documentos eliminados
-    return { deletedCount: result.deletedCount };
-  } catch (error) {
-    handleExceptions(error);
-  }
-}
-  
 }

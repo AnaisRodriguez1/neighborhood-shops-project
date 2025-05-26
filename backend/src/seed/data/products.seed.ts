@@ -1,4 +1,6 @@
-module.exports = [
+import { Types } from "mongoose";
+
+const rawProducts = [
   {
     "name": "Lechuga Costina 1 un.",
     "price": "1390",
@@ -180,3 +182,28 @@ module.exports = [
     "images": "https://santaisabel.vtexassets.com/arquivos/ids/287001-900-900"
   }
 ];
+
+export const products = rawProducts.map(p => {
+  const slug = p.name.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita acentos
+    .replace(/\s+/g, '-') // reemplaza espacios con guiones
+    .replace(/[^\w-]+/g, ''); // elimina caracteres no alfanuméricos excepto guiones
+
+  return {
+    name: p.name,
+    price: Number(p.price),
+    description: p.description,
+    tags: p.tags.split(',').map(t => t.trim()),
+    calories: Number(p.calories),
+    stock: Number(p.stock),
+    slug,
+    images: [
+      {
+        publicId: slug, // Usar el slug generado como publicId
+        url: p.images
+      }
+    ],
+    // Si necesitas añadir shopId u otros campos por defecto, puedes hacerlo aquí
+    shopId: new Types.ObjectId("66523a50123a4567890abc01"), // Ejemplo
+  };
+});

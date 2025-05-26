@@ -6,6 +6,7 @@ import { Auth } from 'src/auth/decorators';
 import { ValidRoles } from 'src/auth/interfaces';
 import { ParseObjectIdPipe } from 'src/common/helpers/pipes/parse-object-id.pipe';
 import { PaginationDto } from 'src/common/dtos/pagination.dto';
+
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
