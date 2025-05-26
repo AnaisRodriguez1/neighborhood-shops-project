@@ -18,21 +18,59 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({})
 
   const { register } = useAuth()
   const navigate = useNavigate()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+  // Funciones de validación
+  const validateEmail = (email: string) => {
+    // Validación simple con regex
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return re.test(email)
+  }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Las contraseñas no coinciden")
-      setIsLoading(false)
-      return
+  const validatePassword = (password: string) => {
+    if (password.length < 6 || password.length > 50) return false
+    // Contiene al menos una mayúscula, una minúscula y un número
+    const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/
+    return re.test(password)
+  }
+
+  const validateForm = () => {
+    const errors: { [key: string]: string } = {}
+
+    if (!formData.nombre.trim()) {
+      errors.nombre = "El nombre es obligatorio."
     }
 
+    if (!formData.email.trim()) {
+      errors.email = "El email es obligatorio."
+    } else if (!validateEmail(formData.email)) {
+      errors.email = "El email no es válido."
+    }
+
+    if (!formData.password) {
+      errors.password = "La contraseña es obligatoria."
+    } else if (!validatePassword(formData.password)) {
+      errors.password = "La contraseña debe tener entre 6 y 50 caracteres, incluir mayúscula, minúscula y número."
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = "Las contraseñas no coinciden."
+    }
+
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+
+    if (!validateForm()) return
+
+    setIsLoading(true)
     try {
       await register({
         nombre: formData.nombre,
@@ -69,9 +107,14 @@ export default function RegisterPage() {
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                {error}
+              </div>
+            )}
 
+            {/* Nombre */}
             <div>
               <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-2">
                 Nombre completo
@@ -85,12 +128,18 @@ export default function RegisterPage() {
                   required
                   value={formData.nombre}
                   onChange={handleChange}
-                  className="pl-10 w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`pl-10 w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    fieldErrors.nombre ? "border-red-500" : "border-gray-300"
+                  }`}
                   placeholder="Tu nombre completo"
                 />
               </div>
+              {fieldErrors.nombre && (
+                <p className="mt-1 text-red-600 text-sm">{fieldErrors.nombre}</p>
+              )}
             </div>
 
+            {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email
@@ -104,12 +153,18 @@ export default function RegisterPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="pl-10 w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`pl-10 w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    fieldErrors.email ? "border-red-500" : "border-gray-300"
+                  }`}
                   placeholder="tu@email.com"
                 />
               </div>
+              {fieldErrors.email && (
+                <p className="mt-1 text-red-600 text-sm">{fieldErrors.email}</p>
+              )}
             </div>
 
+            {/* Rol */}
             <div>
               <label htmlFor="rol" className="block text-sm font-medium text-gray-700 mb-2">
                 Tipo de cuenta
@@ -130,6 +185,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
+            {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Contraseña
@@ -143,19 +199,26 @@ export default function RegisterPage() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="pl-10 pr-10 w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`pl-10 pr-10 w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    fieldErrors.password ? "border-red-500" : "border-gray-300"
+                  }`}
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {fieldErrors.password && (
+                <p className="mt-1 text-red-600 text-sm">{fieldErrors.password}</p>
+              )}
             </div>
 
+            {/* Confirm Password */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
                 Confirmar contraseña
@@ -169,33 +232,33 @@ export default function RegisterPage() {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="pl-10 pr-10 w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`pl-10 pr-10 w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    fieldErrors.confirmPassword ? "border-red-500" : "border-gray-300"
+                  }`}
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  tabIndex={-1}
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {fieldErrors.confirmPassword && (
+                <p className="mt-1 text-red-600 text-sm">{fieldErrors.confirmPassword}</p>
+              )}
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 transition"
             >
-              {isLoading ? "Creando cuenta..." : "Crear Cuenta"}
+              {isLoading ? "Registrando..." : "Crear cuenta"}
             </button>
           </form>
-        </div>
-
-        <div className="text-center">
-          <Link to="/" className="text-blue-600 hover:text-blue-500 font-medium">
-            ← Volver al inicio
-          </Link>
         </div>
       </div>
     </div>
