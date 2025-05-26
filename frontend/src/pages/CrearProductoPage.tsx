@@ -27,7 +27,7 @@ export default function CrearProductoPage() {
   const [selectedShopId, setSelectedShopId] = useState(tiendaId || "")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const [isEditing, setIsEditing] = useState(!!productId)
+  const [isEditing] = useState(!!productId)
 
   const { user } = useAuth()
   const navigate = useNavigate()

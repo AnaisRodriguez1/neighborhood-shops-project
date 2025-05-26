@@ -3,12 +3,12 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useCart } from "../context/CartContext"
-import { useAuth } from "../context/AuthContext"
+//import { useAuth } from "../context/AuthContext"
 import { ShoppingCart, Plus, Minus, Trash2, Store, Package } from "lucide-react"
 
 export default function CarritoPage() {
   const { items, updateQuantity, removeFromCart, clearCart, getTotalItems, getTotalPrice } = useCart()
-  const { user } = useAuth()
+  //const { user } = useAuth()
   const [isProcessing, setIsProcessing] = useState(false)
 
   // Agrupar items por tienda
