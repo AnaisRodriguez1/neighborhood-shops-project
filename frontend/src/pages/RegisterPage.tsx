@@ -6,13 +6,12 @@ import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { Eye, EyeOff, Mail, Lock, User, UserCheck } from "lucide-react"
 
-export default function RegisterPage() {
-  const [formData, setFormData] = useState({
+export default function RegisterPage() {  const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
-    rol: "comprador" as "presidente" | "locatario" | "comprador",
+    rol: "comprador" as "locatario" | "comprador",
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -167,8 +166,7 @@ export default function RegisterPage() {
                 Tipo de cuenta
               </label>
               <div className="relative">
-                <UserCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <select
+                <UserCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />                <select
                   id="rol"
                   name="rol"
                   value={formData.rol}
@@ -177,7 +175,6 @@ export default function RegisterPage() {
                 >
                   <option value="comprador">Comprador</option>
                   <option value="locatario">Locatario (Vendedor)</option>
-                  <option value="presidente">Administrador</option>
                 </select>
               </div>
             </div>
