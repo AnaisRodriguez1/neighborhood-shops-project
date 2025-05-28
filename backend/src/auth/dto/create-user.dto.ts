@@ -1,4 +1,4 @@
-import { IsEmail, IsString, Matches, MaxLength, MinLength } from "class-validator";
+import { IsEmail, IsString, Matches, MaxLength, MinLength, IsOptional, IsArray, IsIn } from "class-validator";
 
 export class CreateUserDto {
 
@@ -18,4 +18,9 @@ export class CreateUserDto {
     @IsString({ message: 'El nombre debe ser un texto.' })
     @MinLength(1, { message: 'El nombre es obligatorio.' })
     name: string;
+
+    @IsOptional()
+    @IsString({ message: 'El rol debe ser un texto válido.' })
+    @IsIn(['comprador', 'locatario', 'presidente'], { message: 'El rol debe ser: comprador, locatario o presidente.' })
+    rol?: string;
 }

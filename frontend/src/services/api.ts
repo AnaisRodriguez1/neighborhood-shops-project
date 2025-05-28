@@ -1,6 +1,8 @@
 import axios from "axios"
 
-const API_BASE_URL = "https://backend-neighborhood-shops-project-production.up.railway.app/api"
+const API_BASE_URL = import.meta.env.DEV 
+  ? "http://localhost:8080/api" 
+  : "https://backend-neighborhood-shops-project-production.up.railway.app/api"
 
 const api = axios.create({
   baseURL: API_BASE_URL,

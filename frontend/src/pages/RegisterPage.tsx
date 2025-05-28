@@ -8,7 +8,7 @@ import { Eye, EyeOff, Mail, Lock, User, UserCheck } from "lucide-react"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
-    nombre: "",
+    name: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -36,12 +36,11 @@ export default function RegisterPage() {
     const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/
     return re.test(password)
   }
-
   const validateForm = () => {
-    const errors: { [key: string]: string } = {}
+    const errors: { [key: string]: string } = {};
 
-    if (!formData.nombre.trim()) {
-      errors.nombre = "El nombre es obligatorio."
+    if (!formData.name.trim()) {
+      errors.name = "El nombre es obligatorio."
     }
 
     if (!formData.email.trim()) {
@@ -63,7 +62,6 @@ export default function RegisterPage() {
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
@@ -71,16 +69,17 @@ export default function RegisterPage() {
     if (!validateForm()) return
 
     setIsLoading(true)
-    try {
-      await register({
-        nombre: formData.nombre,
+    try {      await register({
+        name: formData.name,
         email: formData.email,
         password: formData.password,
         rol: formData.rol,
       })
       navigate("/dashboard")
-    } catch (err) {
-      setError("Error al crear la cuenta. Intenta de nuevo.")
+    } catch (err: any) {
+      console.error('Registration error:', err)
+      const errorMessage = err?.response?.data?.message || err?.message || "Error al crear la cuenta. Intenta de nuevo."
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -112,30 +111,28 @@ export default function RegisterPage() {
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 {error}
               </div>
-            )}
-
-            {/* Nombre */}
+            )}            {/* Nombre */}
             <div>
-              <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                 Nombre completo
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
-                  id="nombre"
-                  name="nombre"
+                  id="name"
+                  name="name"
                   type="text"
                   required
-                  value={formData.nombre}
+                  value={formData.name}
                   onChange={handleChange}
                   className={`pl-10 w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    fieldErrors.nombre ? "border-red-500" : "border-gray-300"
+                    fieldErrors.name ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Tu nombre completo"
                 />
               </div>
-              {fieldErrors.nombre && (
-                <p className="mt-1 text-red-600 text-sm">{fieldErrors.nombre}</p>
+              {fieldErrors.name && (
+                <p className="mt-1 text-red-600 text-sm">{fieldErrors.name}</p>
               )}
             </div>
 

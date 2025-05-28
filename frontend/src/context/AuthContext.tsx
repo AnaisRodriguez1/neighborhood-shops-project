@@ -60,8 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setViewMode({
         current: userData.rol === "comprador" ? "comprador" : "admin",
         originalRole: userData.rol,
-      })
-    } catch (error) {
+      })    } catch (error) {
       throw error
     }
   }
@@ -71,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await apiService.register({
         email: userData.email,
         password: userData.password,
-        name: userData.nombre, // Map nombre to name for API
+        name: userData.name, // Use name for API to match backend
         rol: userData.rol,
       })
 

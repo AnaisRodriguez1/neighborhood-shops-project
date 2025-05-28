@@ -4,9 +4,19 @@ import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  // Configure CORS with environment-based origins
+  const allowedOrigins = process.env.NODE_ENV === 'production' 
+    ? ['https://frontend-neighborhood-shops-project-production.up.railway.app']
+    : [
+        'http://localhost:5173',
+        'http://localhost:5174', 
+        'http://localhost:3000',
+        'http://localhost:4173',
+        'https://frontend-neighborhood-shops-project-production.up.railway.app'
+      ];
 
   app.enableCors({
-    origin: 'https://frontend-neighborhood-shops-project-production.up.railway.app',
+    origin: allowedOrigins,
     credentials: true,
   });
 

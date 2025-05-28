@@ -1,12 +1,17 @@
 import axios from 'axios';
 
+// Development vs Production API URL
+const API_BASE_URL = import.meta.env.DEV 
+  ? 'http://localhost:8080/api/auth'
+  : 'https://backend-neighborhood-shops-project-production.up.railway.app/api/auth';
+
 const API = axios.create({
-  baseURL: 'https://backend-neighborhood-shops-project-production.up.railway.app/api/auth', // Cambia esto por la URL de tu backend
-  withCredentials: true, // 👈 esto es correcto si manejas cookies (aunque usando Bearer Token no es estrictamente necesario)
+  baseURL: API_BASE_URL,
+  withCredentials: true,
 });
 
 // Register
-export const registerRequest = async (newUser: { email: string; password: string; name: string }) => {
+export const registerRequest = async (newUser: { email: string; password: string; name: string; rol?: string }) => {
   const { data } = await API.post('/register', newUser);
   return data;
 };

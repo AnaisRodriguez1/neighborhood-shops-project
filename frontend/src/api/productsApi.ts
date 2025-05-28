@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+// Development vs Production API URL
+const API_BASE_URL = import.meta.env.DEV 
+  ? 'http://localhost:8080/api/products'
+  : 'https://backend-neighborhood-shops-project-production.up.railway.app/api/products';
+
 const API = axios.create({
-  baseURL: 'https://backend-neighborhood-shops-project-production.up.railway.app/api/products',
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 

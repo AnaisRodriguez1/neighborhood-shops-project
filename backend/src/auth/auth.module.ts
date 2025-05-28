@@ -22,14 +22,18 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       }
     ]),
 
-    PassportModule.register({ defaultStrategy: 'jwt' }),
-
-    JwtModule.registerAsync({
+    PassportModule.register({ defaultStrategy: 'jwt' }),    JwtModule.registerAsync({
       imports: [ ConfigModule],
       inject: [ConfigService],
       useFactory: ( configService : ConfigService ) => {
+        const jwtSecret = configService.get('JWT_SECRET') || configService.get('jwtSecret') || 'fallback-development-secret';
+        
+        if (!jwtSecret || jwtSecret === 'fallback-development-secret') {
+          console.warn('⚠️  Warning: Using fallback JWT secret. Set JWT_SECRET environment variable for production!');
+        }
+        
         return{
-          secret: configService.get('JWT_SECRET'),
+          secret: jwtSecret,
           signOptions:{
             expiresIn:'10h'
           }

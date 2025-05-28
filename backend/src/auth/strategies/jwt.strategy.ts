@@ -8,15 +8,15 @@ import { ConfigService } from "@nestjs/config";
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy( Strategy ){
-
-    constructor(
+export class JwtStrategy extends PassportStrategy( Strategy ){    constructor(
         @InjectModel(User.name)
         private readonly userModel: Model<User>,
         configService: ConfigService
     ){
+        const jwtSecret = configService.get<string>('JWT_SECRET') || configService.get<string>('jwtSecret') || 'fallback-development-secret';
+        
         super({
-            secretOrKey: configService.get<string>('JWT_SECRET') ?? 'dev-secret',
+            secretOrKey: jwtSecret,
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
         });
     }
