@@ -10,6 +10,8 @@ import { ShopsModule } from './shops/shops.module';
 import { AuthModule } from './auth/auth.module';
 import { SeedModule } from './seed/seed.module';
 import { EnvConfiguration } from './common/config/env.config';
+import { FilesModule } from './files/files.module';
+import { DeliveryWsModule } from './delivery-ws/delivery-ws.module';
 
 
 const mongoUri = process.env.MONGODB_URI;
@@ -17,7 +19,6 @@ const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
   throw new Error('MONGODB_URI environment variable is not set');
 }
-console.log('Mongo URI:', mongoUri);
 
 @Module({
   imports: [
@@ -47,6 +48,10 @@ console.log('Mongo URI:', mongoUri);
     AuthModule,
 
     SeedModule,
+
+    FilesModule,
+
+    DeliveryWsModule,
   ],
 })
 export class AppModule {}

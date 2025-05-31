@@ -22,6 +22,27 @@ function App() {
         <BrowserRouter>
           <div className="min-h-screen bg-gray-50">
             <Header />
+
+         {/* Server Status and Clients Indicator 
+            <div className="bg-gray-100 py-2 px-4 border-b">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Estado del servidor:</span>
+                  <span
+                    id="server-status"
+                    className="text-sm font-semibold text-red-600"
+                  >
+                    offline
+                  </span>
+                </div>
+                <div>
+                  <span className="text-sm font-medium">Clientes:</span>
+                  <ul id="clients-ul" className="inline-flex gap-2 ml-2"></ul>
+                </div>
+              </div>
+            </div>
+            */}
+
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<HomePage />} />
