@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { AuthProvider } from "./context/AuthContext"
 import { CartProvider } from "./context/CartContext"
+import { ThemeProvider } from "./context/ThemeContext"
 import Header from "./components/Layout/Header"
 import ProtectedRoute from "./components/ProtectedRoute"
 
@@ -17,12 +18,13 @@ import CarritoPage from "./pages/CarritoPage"
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <BrowserRouter>
-          <div className="min-h-screen bg-gray-50">
-            <Header />
-            <Routes>
+    <ThemeProvider>
+      <AuthProvider>
+        <CartProvider>
+          <BrowserRouter>
+            <div className="min-h-screen bg-background transition-colors duration-300">
+              <Header />
+              <Routes>
               {/* Public routes */}
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
@@ -96,12 +98,13 @@ function App() {
                     </div>
                   </ProtectedRoute>
                 }
-              />
+                            />
             </Routes>
           </div>
         </BrowserRouter>
       </CartProvider>
     </AuthProvider>
+  </ThemeProvider>
   )
 }
 

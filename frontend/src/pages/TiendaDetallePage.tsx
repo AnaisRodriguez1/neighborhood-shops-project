@@ -89,13 +89,12 @@ export default function TiendaDetallePage() {
   const categories = ["all", ...new Set(products.map((p) => p.categoria))]
   const filteredProducts =
     selectedCategory === "all" ? products : products.filter((p) => p.categoria === selectedCategory)
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando tienda...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Cargando tienda...</p>
         </div>
       </div>
     )
@@ -103,22 +102,21 @@ export default function TiendaDetallePage() {
 
   if (error || !shop) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error</h1>
-          <p className="text-gray-600">{error || "Tienda no encontrada"}</p>
-          <Link to="/tiendas" className="mt-4 inline-block bg-blue-600 text-white px-6 py-2 rounded-lg">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Error</h1>
+          <p className="text-gray-600 dark:text-gray-300">{error || "Tienda no encontrada"}</p>
+          <Link to="/tiendas" className="mt-4 inline-block bg-blue-600 dark:bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors">
             Volver a Tiendas
           </Link>
         </div>
       </div>
     )
   }
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Shop Header */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Shop Image */}
@@ -137,15 +135,15 @@ export default function TiendaDetallePage() {
             <div className="lg:col-span-2">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{shop.nombre}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{shop.nombre}</h1>
                   {shop.puntuacion !== undefined && (
                     <div className="flex items-center space-x-2 mt-2">
                       <div className="flex items-center space-x-1">
                         <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                        <span className="font-medium">{shop.puntuacion.toFixed(1)}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{shop.puntuacion.toFixed(1)}</span>
                       </div>
-                      <span className="text-gray-500">•</span>
-                      <span className="text-gray-600">{products.length} productos</span>
+                      <span className="text-gray-500 dark:text-gray-400">•</span>
+                      <span className="text-gray-600 dark:text-gray-300">{products.length} productos</span>
                     </div>
                   )}
                 </div>
@@ -155,14 +153,14 @@ export default function TiendaDetallePage() {
                   <div className="flex space-x-2">
                     <Link
                       to={`/tiendas/${shop.id}/editar`}
-                      className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      className="flex items-center space-x-2 bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                     >
                       <Edit className="w-4 h-4" />
                       <span>Editar</span>
                     </Link>
                     <Link
                       to={`/tiendas/${shop.id}/productos/nuevo`}
-                      className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                      className="flex items-center space-x-2 bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Producto</span>
@@ -171,26 +169,26 @@ export default function TiendaDetallePage() {
                 )}
               </div>
 
-              <p className="text-gray-600 mb-6">{shop.descripcion}</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">{shop.descripcion}</p>
 
               {/* Shop Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-3 text-gray-600">
+                  <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-300">
                     <MapPin className="w-5 h-5" />
                     <span>{shop.direccion}</span>
                   </div>
-                  <div className="flex items-center space-x-3 text-gray-600">
+                  <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-300">
                     <Phone className="w-5 h-5" />
                     <span>{shop.telefono}</span>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-3 text-gray-600">
+                  <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-300">
                     <Mail className="w-5 h-5" />
                     <span>{shop.email}</span>
                   </div>
-                  <div className="flex items-center space-x-3 text-gray-600">
+                  <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-300">
                     <Clock className="w-5 h-5" />
                     <span>{shop.horario}</span>
                   </div>
@@ -198,7 +196,7 @@ export default function TiendaDetallePage() {
               </div>
 
               {shop.delivery && (
-                <div className="mt-4 flex items-center space-x-2 text-green-600">
+                <div className="mt-4 flex items-center space-x-2 text-green-600 dark:text-green-400">
                   <Truck className="w-5 h-5" />
                   <span className="font-medium">Delivery disponible</span>
                 </div>
@@ -206,12 +204,10 @@ export default function TiendaDetallePage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Products Section */}
+      </div>      {/* Products Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Productos</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Productos</h2>
 
           {/* Category Filter */}
           {categories.length > 1 && (
@@ -222,8 +218,8 @@ export default function TiendaDetallePage() {
                   onClick={() => setSelectedCategory(category)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     selectedCategory === category
-                      ? "bg-blue-600 text-white"
-                      : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-300"
+                      ? "bg-blue-600 dark:bg-blue-500 text-white"
+                      : "bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
                   }`}
                 >
                   {category === "all" ? "Todos" : category}
@@ -231,18 +227,16 @@ export default function TiendaDetallePage() {
               ))}
             </div>
           )}
-        </div>
-
-        {/* Products Grid */}
+        </div>        {/* Products Grid */}
         {filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
                 {/* Product Image */}
-                <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center">
+                <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center">
                   {product.imagen ? (
                     <img
                       src={product.imagen || "/placeholder.svg"}
@@ -250,7 +244,7 @@ export default function TiendaDetallePage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="text-gray-500 text-center">
+                    <div className="text-gray-500 dark:text-gray-400 text-center">
                       <Package className="w-12 h-12 mx-auto mb-2" />
                       <p className="text-sm">Sin imagen</p>
                     </div>
@@ -259,16 +253,16 @@ export default function TiendaDetallePage() {
 
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">{product.nombre}</h3>
-                    <span className="text-lg font-bold text-blue-600">${product.precio}</span>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-1">{product.nombre}</h3>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${product.precio}</span>
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.descripcion}</p>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">{product.descripcion}</p>
 
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">{product.categoria}</span>
+                    <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded">{product.categoria}</span>
                     <span
-                      className={`text-xs px-2 py-1 rounded ${product.stock > 0 ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}
+                      className={`text-xs px-2 py-1 rounded ${product.stock > 0 ? "bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400" : "bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400"}`}
                     >
                       {product.stock > 0 ? `Stock: ${product.stock}` : "Sin stock"}
                     </span>
@@ -280,7 +274,7 @@ export default function TiendaDetallePage() {
                       <button
                         onClick={() => handleAddToCart(product)}
                         disabled={product.stock === 0}
-                        className="flex-1 flex items-center justify-center space-x-2 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex-1 flex items-center justify-center space-x-2 bg-blue-600 dark:bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ShoppingCart className="w-4 h-4" />
                         <span>Agregar</span>
@@ -289,13 +283,13 @@ export default function TiendaDetallePage() {
                       <>
                         <Link
                           to={`/productos/${product.id}/editar`}
-                          className="flex-1 bg-gray-200 text-gray-800 text-center py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+                          className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-center py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
                         >
                           Editar
                         </Link>
                         <button
                           onClick={() => handleDeleteProduct(product.id)}
-                          className="bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                          className="bg-red-600 dark:bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -308,13 +302,13 @@ export default function TiendaDetallePage() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Package className="w-12 h-12 text-gray-400" />
+            <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Package className="w-12 h-12 text-gray-400 dark:text-gray-500" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               {selectedCategory === "all" ? "No hay productos" : `No hay productos en "${selectedCategory}"`}
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
               {isCompradorView
                 ? "Esta tienda aún no tiene productos disponibles."
                 : "Comienza agregando productos a tu tienda."}
@@ -322,7 +316,7 @@ export default function TiendaDetallePage() {
             {!isCompradorView && (isOwner || user?.rol === "presidente") && (
               <Link
                 to={`/tiendas/${shop.id}/productos/nuevo`}
-                className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center space-x-2 bg-blue-600 dark:bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
               >
                 <Plus className="w-5 h-5" />
                 <span>Agregar Primer Producto</span>

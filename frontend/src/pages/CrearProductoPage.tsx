@@ -116,43 +116,37 @@ export default function CrearProductoPage() {
       [name]: value,
     }))
   }
-
   // Verificar permisos
   if (user?.rol === "comprador") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Acceso Denegado</h1>
-          <p className="text-gray-600">No tienes permisos para crear productos.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Acceso Denegado</h1>
+          <p className="text-gray-600 dark:text-gray-300">No tienes permisos para crear productos.</p>
         </div>
       </div>
     )
   }
-
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-green-600 dark:bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">{isEditing ? "Editar Producto" : "Crear Nuevo Producto"}</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{isEditing ? "Editar Producto" : "Crear Nuevo Producto"}</h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
             {isEditing
               ? "Actualiza la información del producto"
               : "Completa la información para agregar un nuevo producto"}
           </p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-8">
+        </div>        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
-
-            {/* Seleccionar Tienda */}
+            {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg">{error}</div>}            {/* Seleccionar Tienda */}
             {!tiendaId && (
               <div>
-                <label htmlFor="tienda" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="tienda" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Tienda *
                 </label>
                 <select
@@ -160,7 +154,7 @@ export default function CrearProductoPage() {
                   value={selectedShopId}
                   onChange={(e) => setSelectedShopId(e.target.value)}
                   required
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option value="">Selecciona una tienda</option>
                   {shops.map((shop) => (
@@ -170,15 +164,13 @@ export default function CrearProductoPage() {
                   ))}
                 </select>
               </div>
-            )}
-
-            {/* Nombre del producto */}
+            )}            {/* Nombre del producto */}
             <div>
-              <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Nombre del producto *
               </label>
               <div className="relative">
-                <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <input
                   id="nombre"
                   name="nombre"
@@ -186,7 +178,7 @@ export default function CrearProductoPage() {
                   required
                   value={formData.nombre}
                   onChange={handleChange}
-                  className="pl-10 w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Ej: Camiseta de algodón"
                 />
               </div>
@@ -194,11 +186,11 @@ export default function CrearProductoPage() {
 
             {/* Descripción */}
             <div>
-              <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Descripción *
               </label>
               <div className="relative">
-                <FileText className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                <FileText className="absolute left-3 top-3 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <textarea
                   id="descripcion"
                   name="descripcion"
@@ -206,20 +198,18 @@ export default function CrearProductoPage() {
                   rows={4}
                   value={formData.descripcion}
                   onChange={handleChange}
-                  className="pl-10 w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Describe las características, materiales, usos..."
                 />
               </div>
-            </div>
-
-            {/* Precio y Stock */}
+            </div>            {/* Precio y Stock */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="precio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Precio *
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                   <input
                     id="precio"
                     name="precio"
@@ -229,18 +219,18 @@ export default function CrearProductoPage() {
                     required
                     value={formData.precio}
                     onChange={handleChange}
-                    className="pl-10 w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="0.00"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="stock" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="stock" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Stock *
                 </label>
                 <div className="relative">
-                  <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                   <input
                     id="stock"
                     name="stock"
@@ -249,20 +239,18 @@ export default function CrearProductoPage() {
                     required
                     value={formData.stock}
                     onChange={handleChange}
-                    className="pl-10 w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="0"
                   />
                 </div>
               </div>
-            </div>
-
-            {/* Categoría */}
+            </div>            {/* Categoría */}
             <div>
-              <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Categoría *
               </label>
               <div className="relative">
-                <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <input
                   id="categoria"
                   name="categoria"
@@ -270,7 +258,7 @@ export default function CrearProductoPage() {
                   required
                   value={formData.categoria}
                   onChange={handleChange}
-                  className="pl-10 w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Ej: Ropa, Electrónicos, Hogar..."
                 />
               </div>
@@ -278,36 +266,34 @@ export default function CrearProductoPage() {
 
             {/* Imagen (opcional) */}
             <div>
-              <label htmlFor="imagen" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="imagen" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 URL de imagen (opcional)
               </label>
               <div className="relative">
-                <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <input
                   id="imagen"
                   name="imagen"
                   type="url"
                   value={formData.imagen}
                   onChange={handleChange}
-                  className="pl-10 w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="https://ejemplo.com/imagen.jpg"
                 />
               </div>
-            </div>
-
-            {/* Buttons */}
+            </div>            {/* Buttons */}
             <div className="flex space-x-4 pt-6">
               <button
                 type="button"
                 onClick={() => navigate(selectedShopId ? `/tiendas/${selectedShopId}` : "/dashboard")}
-                className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                className="flex-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 bg-green-600 dark:bg-green-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading
                   ? isEditing
