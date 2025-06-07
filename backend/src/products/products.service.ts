@@ -56,19 +56,34 @@ export class ProductsService {
     } catch (error) {
         handleExceptions(error, 'el producto','crear');
     }
-  }
+  }  findAll(paginationDto : PaginationDto) {
 
-  findAll(paginationDto : PaginationDto) {
+    const { limit = this.defaultLimit, offset, page } = paginationDto;
 
-    const { limit = this.defaultLimit, offset = this.defaultOffset } = paginationDto;
+    // Calculate offset: use provided offset or calculate from page
+    const calculatedOffset = offset !== undefined ? offset : (page ? (page - 1) * limit : this.defaultOffset);
 
     return this.productModel.find()
       .limit( limit )
-      .skip( offset )
+      .skip( calculatedOffset )
       .sort({
         name:1
       })
-      .select('-_id -createdAt -updatedAt')
+      .select('-createdAt -updatedAt')
+  }
+  async findByShopId(shopId: string, paginationDto: PaginationDto) {
+    if (!Types.ObjectId.isValid(shopId)) {
+      throw new BadRequestException(`'${shopId}' no es un ObjectId válido.`);
+    }
+
+    const { limit = this.defaultLimit, offset, page } = paginationDto;
+    const calculatedOffset = offset !== undefined ? offset : (page ? (page - 1) * limit : this.defaultOffset);
+
+    return this.productModel.find({ shopId })
+      .limit(limit)
+      .skip(calculatedOffset)
+      .sort({ name: 1 })
+      .select('-createdAt -updatedAt');
   }
 
   async findOne(id: string) {
@@ -78,8 +93,11 @@ export class ProductsService {
     
     return product;
   }
-
   async update(id: string, updateProductDto: UpdateProductDto) {
+    console.log('=== PRODUCTS SERVICE UPDATE ===');
+    console.log('ID received:', id);
+    console.log('DTO received:', JSON.stringify(updateProductDto, null, 2));
+    
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException(`El ID '${id}' no es válido.`);
     }
@@ -89,18 +107,27 @@ export class ProductsService {
       throw new NotFoundException(`No se encontró un producto con ID '${id}'.`);
     }
 
+    console.log('Product found:', product.toObject());
+
     // ❌ Protege campos que NO deben ser actualizados
     delete (updateProductDto as any).slug;
     delete (updateProductDto as any).shopId;
     delete (updateProductDto as any).rating;
     delete (updateProductDto as any).reviews;
-
-    // ✅ Aplica campos actualizables
+    
+    console.log('DTO after cleanup:', JSON.stringify(updateProductDto, null, 2));    // ✅ Aplica campos actualizables
     Object.assign(product, updateProductDto);
+    
+    console.log('Product after Object.assign:', product.toObject());
 
     try {
-      return await product.save(); // mantiene hooks como el de slug si cambia name
+      const result = await product.save(); // mantiene hooks como el de slug si cambia name
+      console.log('Product saved successfully:', result.toObject());
+      console.log('=== END PRODUCTS SERVICE UPDATE ===');
+      return result;
     } catch (error) {
+      console.log('Error saving product:', error);
+      console.log('=== END PRODUCTS SERVICE UPDATE (ERROR) ===');
       if (error.code === 11000) {
         throw new BadRequestException(`Ya existe otro producto con datos similares.`);
       }

@@ -9,12 +9,12 @@ import { Store, MapPin, Phone, Mail, Clock, Truck } from "lucide-react"
 
 export default function CrearTiendaPage() {
   const [formData, setFormData] = useState({
-    nombre: "",
-    descripcion: "",
-    direccion: "",
-    telefono: "",
+    name: "",
+    description: "",
+    address: "",
+    phone: "",
     email: "",
-    horario: "",
+    schedule: "",
     delivery: false,
   })
   const [isLoading, setIsLoading] = useState(false)
@@ -78,10 +78,10 @@ export default function CrearTiendaPage() {
                 <Store className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <input
                   id="nombre"
-                  name="nombre"
+                  name="name"
                   type="text"
                   required
-                  value={formData.nombre}
+                  value={formData.name}
                   onChange={handleChange}
                   className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Ej: Mi Tienda Local"
@@ -96,10 +96,10 @@ export default function CrearTiendaPage() {
               </label>
               <textarea
                 id="descripcion"
-                name="descripcion"
+                name="description"
                 required
                 rows={4}
-                value={formData.descripcion}
+                value={formData.description}
                 onChange={handleChange}
                 className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Describe tu tienda, productos que vendes, especialidades..."
@@ -113,10 +113,10 @@ export default function CrearTiendaPage() {
                 <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <input
                   id="direccion"
-                  name="direccion"
+                  name="address"
                   type="text"
                   required
-                  value={formData.direccion}
+                  value={formData.address}
                   onChange={handleChange}
                   className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Calle, número, ciudad"
@@ -133,10 +133,10 @@ export default function CrearTiendaPage() {
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <input
                   id="telefono"
-                  name="telefono"
+                  name="phone"
                   type="tel"
                   required
-                  value={formData.telefono}
+                  value={formData.phone}
                   onChange={handleChange}
                   className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="+1234567890"
@@ -173,10 +173,10 @@ export default function CrearTiendaPage() {
                 <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <input
                   id="horario"
-                  name="horario"
+                  name="schedule"
                   type="text"
                   required
-                  value={formData.horario}
+                  value={formData.schedule}
                   onChange={handleChange}
                   className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Ej: Lun-Vie 9:00-18:00, Sáb 9:00-14:00"

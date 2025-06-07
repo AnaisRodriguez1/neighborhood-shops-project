@@ -7,24 +7,24 @@ import { apiService } from "../services/api"
 import { useAuth } from "../context/AuthContext"
 import { Package, DollarSign, Hash, FileText, Tag, ImageIcon } from "lucide-react"
 
-interface Shop {
+interface CrearProductoShop {
   id: string
-  nombre: string
-  locatarioId: string
+  name: string
+  ownerId: string
 }
 
 export default function CrearProductoPage() {
-  const { tiendaId, productId } = useParams<{ tiendaId: string; productId?: string }>()
+  const { shopId, productId } = useParams<{ shopId: string; productId?: string }>()
   const [formData, setFormData] = useState({
-    nombre: "",
-    descripcion: "",
-    precio: "",
-    categoria: "",
+    name: "",
+    description: "",
+    price: "",
+    category: "",
     stock: "",
-    imagen: "",
+    image: "",
   })
-  const [shops, setShops] = useState<Shop[]>([])
-  const [selectedShopId, setSelectedShopId] = useState(tiendaId || "")
+  const [shops, setShops] = useState<CrearProductoShop[]>([])
+  const [selectedShopId, setSelectedShopId] = useState(shopId || "")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [isEditing] = useState(!!productId)
@@ -45,10 +45,8 @@ export default function CrearProductoPage() {
       const allShops = response.data || response      // Filtrar tiendas según el rol
       let userShops = allShops
       if (user?.role === "locatario") {
-        userShops = allShops.filter((shop: Shop) => shop.locatarioId === user.id)
-      }
-
-      setShops(userShops)
+        userShops = allShops.filter((shop: CrearProductoShop) => shop.ownerId === user.id)
+      }      setShops(userShops)
     } catch (err) {
       console.error("Error loading shops:", err)
     }
@@ -58,14 +56,14 @@ export default function CrearProductoPage() {
     try {
       const product = await apiService.getProduct(productId!)
       setFormData({
-        nombre: product.nombre,
-        descripcion: product.descripcion,
-        precio: product.precio.toString(),
-        categoria: product.categoria,
-        stock: product.stock.toString(),
-        imagen: product.imagen || "",
+        name: product.name ?? "",
+        description: product.description ?? "",
+        price: product.price != null ? product.price.toString() : "",
+        category: product.category ?? "",
+        stock: product.stock != null ? product.stock.toString() : "",
+        image: product.image ?? "",
       })
-      setSelectedShopId(product.tiendaId)
+      setSelectedShopId(product.shopId ?? "")
     } catch (err: any) {
       setError("Error al cargar el producto")
     }
@@ -80,18 +78,21 @@ export default function CrearProductoPage() {
       setError("Debes seleccionar una tienda")
       setIsLoading(false)
       return
-    }
-
-    try {
-      const productData = {
-        nombre: formData.nombre,
-        descripcion: formData.descripcion,
-        precio: Number.parseFloat(formData.precio),
-        categoria: formData.categoria,
+    }    try {      const productData = {
+        name: formData.name,
+        description: formData.description,
+        price: Number.parseFloat(formData.price),
+        tags: formData.category ? [formData.category] : undefined,
         stock: Number.parseInt(formData.stock),
-        imagen: formData.imagen || undefined,
-        tiendaId: selectedShopId,
+        images: formData.image || undefined,
+        shopId: selectedShopId,
       }
+
+      console.log('=== FRONTEND UPDATE DEBUG ===');
+      console.log('Is editing:', isEditing);
+      console.log('Product ID:', productId);
+      console.log('Product data to send:', JSON.stringify(productData, null, 2));
+      console.log('=============================');
 
       if (isEditing) {
         await apiService.updateProduct(productId!, productData)
@@ -141,39 +142,50 @@ export default function CrearProductoPage() {
         </div>        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg">{error}</div>}            {/* Seleccionar Tienda */}
-            {!tiendaId && (
+            {!shopId && (
               <div>
                 <label htmlFor="tienda" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Tienda *
                 </label>
-                <select
-                  id="tienda"
-                  value={selectedShopId}
-                  onChange={(e) => setSelectedShopId(e.target.value)}
-                  required
-                  className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value="">Selecciona una tienda</option>
-                  {shops.map((shop) => (
-                    <option key={shop.id} value={shop.id}>
-                      {shop.nombre}
-                    </option>
-                  ))}
-                </select>
+                {isEditing ? (
+                  <div>
+                    <div className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white">
+                      {shops.find(shop => shop.id === selectedShopId)?.name || 'Cargando...'}
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      No puedes cambiar la tienda al editar un producto
+                    </p>
+                  </div>
+                ) : (
+                  <select
+                    id="tienda"
+                    value={selectedShopId}
+                    onChange={(e) => setSelectedShopId(e.target.value)}
+                    required
+                    className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="">Selecciona una tienda</option>
+                    {shops.map((shop) => (
+                      <option key={shop.id} value={shop.id}>
+                        {shop.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
-            )}            {/* Nombre del producto */}
+            )}{/* Nombre del producto */}
             <div>
-              <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Nombre del producto *
               </label>
               <div className="relative">
                 <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <input
-                  id="nombre"
-                  name="nombre"
+                  id="name"
+                  name="name"
                   type="text"
                   required
-                  value={formData.nombre}
+                  value={formData.name}
                   onChange={handleChange}
                   className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Ej: Camiseta de algodón"
@@ -183,38 +195,37 @@ export default function CrearProductoPage() {
 
             {/* Descripción */}
             <div>
-              <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Descripción *
               </label>
               <div className="relative">
                 <FileText className="absolute left-3 top-3 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <textarea
-                  id="descripcion"
-                  name="descripcion"
+                  id="description"
+                  name="description"
                   required
                   rows={4}
-                  value={formData.descripcion}
+                  value={formData.description}
                   onChange={handleChange}
                   className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Describe las características, materiales, usos..."
                 />
               </div>
-            </div>            {/* Precio y Stock */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="precio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            </div>{/* Precio y Stock */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">              <div>
+                <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Precio *
                 </label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                   <input
-                    id="precio"
-                    name="precio"
+                    id="price"
+                    name="price"
                     type="number"
                     step="0.01"
                     min="0"
                     required
-                    value={formData.precio}
+                    value={formData.price}
                     onChange={handleChange}
                     className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="0.00"
@@ -243,17 +254,17 @@ export default function CrearProductoPage() {
               </div>
             </div>            {/* Categoría */}
             <div>
-              <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Categoría *
               </label>
               <div className="relative">
                 <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <input
-                  id="categoria"
-                  name="categoria"
+                  id="category"
+                  name="category"
                   type="text"
                   required
-                  value={formData.categoria}
+                  value={formData.category}
                   onChange={handleChange}
                   className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Ej: Ropa, Electrónicos, Hogar..."
@@ -263,22 +274,22 @@ export default function CrearProductoPage() {
 
             {/* Imagen (opcional) */}
             <div>
-              <label htmlFor="imagen" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="image" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 URL de imagen (opcional)
               </label>
               <div className="relative">
                 <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <input
-                  id="imagen"
-                  name="imagen"
+                  id="image"
+                  name="image"
                   type="url"
-                  value={formData.imagen}
+                  value={formData.image}
                   onChange={handleChange}
                   className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="https://ejemplo.com/imagen.jpg"
                 />
               </div>
-            </div>            {/* Buttons */}
+            </div>{/* Buttons */}
             <div className="flex space-x-4 pt-6">
               <button
                 type="button"

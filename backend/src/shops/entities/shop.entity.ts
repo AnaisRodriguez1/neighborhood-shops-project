@@ -51,7 +51,19 @@ export class Shop extends Document {
         required:true,
         trim:true
     })
-    address:string;
+    address:string;    // Array de exactamente 2 imágenes: [0] = icono, [1] = dashboard
+    @Prop({
+        type: [String],
+        default: [],
+        validate: {
+            validator: function(images: string[]) {
+                // Debe tener exactamente 2 imágenes
+                return images.length === 2;
+            },
+            message: 'La tienda debe tener exactamente 2 imágenes: icono y dashboard'
+        }
+    })
+    images: string[]; // [icono, dashboard]
 
 //NO EN FORMULARIO
     @Prop({
@@ -100,4 +112,18 @@ ShopSchema.pre<Shop>('save', function(next) {
   });
   
 ShopSchema.index({ ownerId: 1, slug: 1 }, { unique: true });
+
+// Métodos helper para acceder a las imágenes
+ShopSchema.methods.getIcon = function() {
+  return this.images && this.images[0] ? this.images[0] : null;
+};
+
+ShopSchema.methods.getDashboard = function() {
+  return this.images && this.images[1] ? this.images[1] : null;
+};
+
+ShopSchema.methods.setImages = function(iconUrl: string, dashboardUrl: string) {
+  this.images = [iconUrl, dashboardUrl];
+};
+
 applyToJSONTransform(ShopSchema);

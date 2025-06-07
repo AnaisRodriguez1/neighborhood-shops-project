@@ -20,10 +20,8 @@ import { AuthUser } from './shops.service'; // 👈 usa la interfaz que definimo
 
 @Controller('shops')
 export class ShopsController {
-  constructor(private readonly shopsService: ShopsService) {}
-
-  @Post()
-  @Auth(ValidRoles.locatario, ValidRoles.presidente)
+  constructor(private readonly shopsService: ShopsService) {}  @Post()
+  @Auth(ValidRoles.locatario)
   create(
     @Body() createShopDto: CreateShopDto,
     @GetUser() user: AuthUser,

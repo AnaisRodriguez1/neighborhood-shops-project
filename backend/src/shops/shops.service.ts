@@ -45,15 +45,17 @@ export class ShopsService {
       handleExceptions(error, 'la tienda', 'crear');
     }
   }
-
   async findAll(paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto;
+    const { limit = 10, offset, page } = paginationDto;
+
+    // Calculate offset: use provided offset or calculate from page
+    const calculatedOffset = offset !== undefined ? offset : (page ? (page - 1) * limit : 0);
 
     try {
       return await this.shopModel
         .find({ isActive: true })
         .limit(limit)
-        .skip(offset)
+        .skip(calculatedOffset)
         .sort({ name: 1 })
         .populate('ownerId', 'name email')
         .exec();

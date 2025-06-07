@@ -99,12 +99,13 @@ function App() {  return (
                     </div>
                   </ProtectedRoute>
                 }
-                            />            </Routes>
-            </div>
-          </BrowserRouter>
-        </CartProvider>
-      </AuthProvider>
-    </ThemeProvider>
+                            />
+            </Routes>
+          </div>
+        </BrowserRouter>
+      </CartProvider>
+    </AuthProvider>
+  </ThemeProvider>
   )
 }
 

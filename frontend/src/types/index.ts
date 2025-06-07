@@ -1,43 +1,44 @@
 export interface User {
   id: string
   email: string
-  nombre: string
+  name: string
   role: "presidente" | "locatario" | "comprador"
   token?: string
 }
 
 export interface Tienda {
   id: string
-  nombre: string
-  descripcion: string
-  direccion: string
-  telefono: string
+  name: string
+  description: string
+  address: string
+  phone: string
   email: string
-  horario: string
+  schedule: string
   delivery: boolean
   slug: string
-  puntuacion?: number
-  locatarioId: string
+  rating?: number
+  score?: number
+  ownerId: string
 }
 
 export interface Producto {
   id: string
-  nombre: string
-  descripcion: string
-  precio: number
-  categoria: string
+  name: string
+  description: string
+  price: number
+  category: string
   stock: number
-  imagen?: string
-  tiendaId: string
+  image?: string
+  shopId: string
 }
 
 export interface CartItem {
-  producto: Producto
-  cantidad: number
-  tienda: Tienda
+  product: Producto
+  quantity: number
+  shop: Tienda
 }
 
 export interface ViewMode {
-  current: "admin" | "comprador"
+  current: "presidente" | "locatario" | "comprador"
   originalRole: "presidente" | "locatario" | "comprador"
 }

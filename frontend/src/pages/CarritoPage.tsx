@@ -5,19 +5,19 @@ import { Link } from "react-router-dom"
 import { useCart } from "../context/CartContext"
 //import { useAuth } from "../context/AuthContext"
 import { ShoppingCart, Plus, Minus, Trash2, Store, Package } from "lucide-react"
+import { formatCurrency } from "../utils/format"
 
 export default function CarritoPage() {
   const { items, updateQuantity, removeFromCart, clearCart, getTotalItems, getTotalPrice } = useCart()
   //const { user } = useAuth()
   const [isProcessing, setIsProcessing] = useState(false)
-
   // Agrupar items por tienda
   const itemsByStore = items.reduce(
     (acc, item) => {
-      const storeId = item.tienda.id
+      const storeId = item.shop.id
       if (!acc[storeId]) {
         acc[storeId] = {
-          tienda: item.tienda,
+          tienda: item.shop,
           items: [],
         }
       }
@@ -100,7 +100,8 @@ export default function CarritoPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">          {/* Cart Items */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Cart Items */}
           <div className="lg:col-span-2 space-y-6">
             {Object.values(itemsByStore).map(({ tienda, items: storeItems }) => (
               <div key={tienda.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
@@ -111,21 +112,20 @@ export default function CarritoPage() {
                       <Store className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">{tienda.nombre}</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{tienda.name}</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{storeItems.length} productos</p>
                     </div>
                   </div>
                 </div>                {/* Store Items */}
-                <div className="divide-y divide-gray-200 dark:divide-gray-600">
-                  {storeItems.map((item) => (
-                    <div key={item.producto.id} className="p-6">
+                <div className="divide-y divide-gray-200 dark:divide-gray-600">                  {storeItems.map((item) => (
+                    <div key={item.product.id} className="p-6">
                       <div className="flex items-center space-x-4">
                         {/* Product Image */}
                         <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                          {item.producto.imagen ? (
+                          {item.product.image ? (
                             <img
-                              src={item.producto.imagen || "/placeholder.svg"}
-                              alt={item.producto.nombre}
+                              src={item.product.image || "/placeholder.svg"}
+                              alt={item.product.name}
                               className="w-full h-full object-cover rounded-lg"
                             />
                           ) : (
@@ -135,42 +135,38 @@ export default function CarritoPage() {
 
                         {/* Product Info */}
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-lg font-medium text-gray-900 dark:text-white truncate">{item.producto.nombre}</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 truncate">{item.producto.descripcion}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{item.producto.categoria}</p>
+                          <h4 className="text-lg font-medium text-gray-900 dark:text-white truncate">{item.product.name}</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 truncate">{item.product.description}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{item.product.category}</p>
                         </div>
 
                         {/* Quantity Controls */}
                         <div className="flex items-center space-x-3">
                           <button
-                            onClick={() => handleQuantityChange(item.producto.id, item.cantidad - 1)}
+                            onClick={() => handleQuantityChange(item.product.id, item.quantity - 1)}
                             className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
                           >
                             <Minus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                           </button>
 
-                          <span className="w-8 text-center font-medium text-gray-900 dark:text-white">{item.cantidad}</span>
+                          <span className="w-8 text-center font-medium text-gray-900 dark:text-white">{item.quantity}</span>
 
                           <button
-                            onClick={() => handleQuantityChange(item.producto.id, item.cantidad + 1)}
-                            disabled={item.cantidad >= item.producto.stock}
+                            onClick={() => handleQuantityChange(item.product.id, item.quantity + 1)}
+                            disabled={item.quantity >= item.product.stock}
                             className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             <Plus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                           </button>
-                        </div>
-
-                        {/* Price */}
+                        </div>                        {/* Price */}
                         <div className="text-right">
                           <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                            ${(item.producto.precio * item.cantidad).toFixed(2)}
+                            {formatCurrency(item.product.price * item.quantity)}
                           </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-300">${item.producto.precio} c/u</p>
-                        </div>
-
-                        {/* Remove Button */}
+                          <p className="text-sm text-gray-600 dark:text-gray-300">{formatCurrency(item.product.price)} c/u</p>
+                        </div>{/* Remove Button */}
                         <button
-                          onClick={() => handleRemoveItem(item.producto.id)}
+                          onClick={() => handleRemoveItem(item.product.id)}
                           className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -186,10 +182,9 @@ export default function CarritoPage() {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-8">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Resumen del Pedido</h3>
 
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-gray-600 dark:text-gray-300">
+              <div className="space-y-3 mb-6">                <div className="flex justify-between text-gray-600 dark:text-gray-300">
                   <span>Subtotal ({getTotalItems()} productos)</span>
-                  <span>${getTotalPrice().toFixed(2)}</span>
+                  <span>{formatCurrency(getTotalPrice())}</span>
                 </div>
 
                 <div className="flex justify-between text-gray-600 dark:text-gray-300">
@@ -197,10 +192,9 @@ export default function CarritoPage() {
                   <span>Gratis</span>
                 </div>
 
-                <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
-                  <div className="flex justify-between text-lg font-semibold text-gray-900 dark:text-white">
+                <div className="border-t border-gray-200 dark:border-gray-600 pt-3">                  <div className="flex justify-between text-lg font-semibold text-gray-900 dark:text-white">
                     <span>Total</span>
-                    <span>${getTotalPrice().toFixed(2)}</span>
+                    <span>{formatCurrency(getTotalPrice())}</span>
                   </div>
                 </div>
               </div>

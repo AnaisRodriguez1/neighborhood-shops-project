@@ -1,28 +1,23 @@
-"use client"
+"use client";
 
-import { Link, useNavigate } from "react-router-dom"
-import { ShoppingCart, LogOut, Eye, Settings, Sun, Moon, Store } from "lucide-react"
-import { useAuth } from "../../context/AuthContext"
-import { useCart } from "../../context/CartContext"
-import { useTheme } from "../../context/ThemeContext"
+import { Link, useNavigate } from "react-router-dom";
+import { ShoppingCart, LogOut, Sun, Moon, Store } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { useCart } from "../../context/CartContext";
+import { useTheme } from "../../context/ThemeContext";
+import { capitalizeFirstLetter, getFirstName } from "@/utils/format";
 
 export default function Header() {
-  const { user, viewMode, logout, switchToComprador, switchToAdmin } = useAuth()
-  const { getTotalItems } = useCart()
-  const { theme, toggleTheme } = useTheme()
-  const navigate = useNavigate()
+  const { user, viewMode, logout } = useAuth();
+  const { getTotalItems } = useCart();
+  const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout()
-    navigate("/")
-  }
-  const handleViewModeSwitch = () => {
-    if (viewMode?.current === "admin") {
-      switchToComprador()
-    } else {
-      switchToAdmin()
-    }
-  }
+    logout();
+    navigate("/");
+  };
+
   return (
     <header className="bg-card/80 backdrop-blur-md shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -35,56 +30,41 @@ export default function Header() {
               </div>
               <div className="absolute -inset-0.5 bg-gradient-to-br from-primary/20 to-transparent rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
             </div>
-            <span className="text-2xl font-bold text-foreground tracking-tight">Tienda Pez Caucho</span>
+            <span className="text-2xl font-bold text-foreground tracking-tight">
+              Tienda Pez Caucho
+            </span>
           </Link>
 
           {/* Navigation */}
-          <nav className="flex items-center space-x-4">            {/* Theme Toggle */}
+          <nav className="flex items-center space-x-4">
+            {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
               className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-200 rounded-full"
-              title={`Cambiar a modo ${theme === 'light' ? 'oscuro' : 'claro'}`}
+              title={`Cambiar a modo ${theme === "light" ? "oscuro" : "claro"}`}
             >
-              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+              {theme === "light" ? (
+                <Moon className="w-5 h-5" />
+              ) : (
+                <Sun className="w-5 h-5" />
+              )}
             </button>
 
             {user ? (
-              <>                {/* View Mode Indicator */}
-                {viewMode && (
-                  <div className="flex items-center space-x-2 px-3 py-1.5 bg-accent/30 rounded-full border border-border/40">
-                    <span className="text-sm text-muted-foreground font-medium">
-                      {viewMode.current === "admin" ? "Admin" : "Comprador"}
-                    </span>
-                    {viewMode.originalRole !== "comprador" && (
-                      <button
-                        onClick={handleViewModeSwitch}
-                        className="p-1 text-muted-foreground hover:text-primary transition-colors rounded-full"
-                        title="Cambiar vista"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                )}
-
+              <>
                 {/* Navigation Links */}
-                <div className="flex items-center space-x-1">                  <Link
-                    to="/dashboard"
-                    className="flex items-center space-x-2 px-3 py-2 text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 rounded-full"
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span className="font-medium">Dashboard</span>
-                  </Link>                  <Link 
-                    to="/tiendas" 
+                <div className="flex items-center space-x-1">
+                  <Link
+                    to="/tiendas"
                     className="px-3 py-2 text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 rounded-full font-medium"
                   >
                     Tiendas
                   </Link>
                 </div>
-
                 {/* Cart (only in comprador view) */}
-                {viewMode?.current === "comprador" && (                  <Link 
-                    to="/carrito" 
+                {viewMode?.current === "comprador" && (
+                  <Link
+                    to="/carrito"
                     className="relative p-2.5 text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 rounded-full"
                   >
                     <ShoppingCart className="w-5 h-5" />
@@ -94,29 +74,39 @@ export default function Header() {
                       </span>
                     )}
                   </Link>
-                )}
-
+                )}{" "}
                 {/* User Menu */}
-                <div className="flex items-center space-x-3 pl-4 border-l border-border/40">
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-foreground">{user.nombre}</p>
-                    <p className="text-xs text-muted-foreground">{user.role}</p>
-                  </div>                  <button
-                    onClick={handleLogout}
-                    className="p-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 rounded-full"
-                    title="Cerrar sesión"
-                  >
-                    <LogOut className="w-5 h-5" />
-                  </button>
-                </div>
+                <Link to="/dashboard">
+                  <div className="flex items-center space-x-3 pl-4 border-l border-border/40">
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-foreground">
+                        Hola, {getFirstName(user.name)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {capitalizeFirstLetter(user.role)}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleLogout}
+                      className="p-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 rounded-full"
+                      title="Cerrar sesión"
+                    >
+                      <LogOut className="w-5 h-5" />
+                    </button>
+                  </div>
+                </Link>
               </>
             ) : (
-              <div className="flex items-center space-x-3">                <Link 
-                  to="/login" 
+              <div className="flex items-center space-x-3">
+                {" "}
+                <Link
+                  to="/login"
                   className="px-4 py-2 text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 rounded-full font-medium"
                 >
                   Iniciar Sesión
-                </Link>                <Link
+                </Link>{" "}
+                <Link
                   to="/register"
                   className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-6 py-2.5 rounded-full hover:from-primary/90 hover:to-primary/70 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
                 >
@@ -128,5 +118,5 @@ export default function Header() {
         </div>
       </div>
     </header>
-  )
+  );
 }

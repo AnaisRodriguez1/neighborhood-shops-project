@@ -67,7 +67,6 @@ export const apiService = {
     const { data } = await api.patch(`/shops/${id}`, shopData)
     return data
   },
-
   deleteShop: async (id: string) => {
     const { data } = await api.delete(`/shops/${id}`)
     return data
@@ -81,6 +80,16 @@ export const apiService = {
     const query = params.toString() ? `?${params.toString()}` : ""
 
     const { data } = await api.get(`/products${query}`)
+    return data
+  },
+
+  getProductsByShop: async (shopId: string, page?: number, limit?: number) => {
+    const params = new URLSearchParams()
+    if (page) params.append("page", page.toString())
+    if (limit) params.append("limit", limit.toString())
+    const query = params.toString() ? `?${params.toString()}` : ""
+
+    const { data } = await api.get(`/products/shop/${shopId}${query}`)
     return data
   },
 
@@ -103,4 +112,5 @@ export const apiService = {
     const { data } = await api.delete(`/products/${id}`)
     return data
   },
+
 }

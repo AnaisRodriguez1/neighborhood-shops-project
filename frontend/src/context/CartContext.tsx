@@ -18,23 +18,22 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
-
   const addToCart = (producto: Producto, tienda: Tienda, cantidad = 1) => {
     setItems((prev) => {
-      const existingItem = prev.find((item) => item.producto.id === producto.id)
+      const existingItem = prev.find((item) => item.product.id === producto.id)
 
       if (existingItem) {
         return prev.map((item) =>
-          item.producto.id === producto.id ? { ...item, cantidad: item.cantidad + cantidad } : item,
+          item.product.id === producto.id ? { ...item, quantity: item.quantity + cantidad } : item,
         )
       }
 
-      return [...prev, { producto, tienda, cantidad }]
+      return [...prev, { product: producto, shop: tienda, quantity: cantidad }]
     })
   }
 
   const removeFromCart = (productoId: string) => {
-    setItems((prev) => prev.filter((item) => item.producto.id !== productoId))
+    setItems((prev) => prev.filter((item) => item.product.id !== productoId))
   }
 
   const updateQuantity = (productoId: string, cantidad: number) => {
@@ -43,7 +42,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    setItems((prev) => prev.map((item) => (item.producto.id === productoId ? { ...item, cantidad } : item)))
+    setItems((prev) => prev.map((item) => (item.product.id === productoId ? { ...item, quantity: cantidad } : item)))
   }
 
   const clearCart = () => {
@@ -51,11 +50,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }
 
   const getTotalItems = () => {
-    return items.reduce((total, item) => total + item.cantidad, 0)
+    return items.reduce((total, item) => total + item.quantity, 0)
   }
 
   const getTotalPrice = () => {
-    return items.reduce((total, item) => total + item.producto.precio * item.cantidad, 0)
+    return items.reduce((total, item) => total + item.product.price * item.quantity, 0)
   }
 
   return (

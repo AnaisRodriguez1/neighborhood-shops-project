@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer";
-import { IsArray, IsBoolean, IsIn, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, Matches, Min } from "class-validator";
+import { IsArray, IsBoolean, IsIn, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, IsUrl, Matches, Min } from "class-validator";
 import { Types } from "mongoose";
 
 const CATEGORY_LIST = [
@@ -51,5 +51,15 @@ export class CreateShopDto {
       each: true,
       message: `Cada categoría debe ser una de: ${CATEGORY_LIST.join(', ')}.`,
     })
-    categories?: Category[];
+    categories?: Category[];    @IsOptional()
+    @IsArray({ message: 'Las imágenes deben ser un array.' })
+    @IsUrl({}, { each: true, message: 'Cada imagen debe ser una URL válida.' })
+    @Transform(({ value }) => {
+      // Si no se proporcionan imágenes, usar array vacío
+      if (!value) return [];
+      // Si es un string, convertir a array
+      if (typeof value === 'string') return [value];
+      return value;
+    })
+    images?: string[]; // [icono, dashboard]
 }

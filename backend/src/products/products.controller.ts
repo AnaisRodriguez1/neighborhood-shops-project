@@ -22,14 +22,23 @@ export class ProductsController {
     return this.productsService.findAll(paginationDto);
   }
 
+  @Get('shop/:shopId')
+  findByShopId(@Param('shopId', ParseObjectIdPipe) shopId: string, @Query() paginationDto : PaginationDto) {
+    return this.productsService.findByShopId(shopId, paginationDto);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseObjectIdPipe) id: string) {
     return this.productsService.findOne(id);
   }
-
   @Patch(':id')
   @Auth(ValidRoles.locatario, ValidRoles.presidente)
   update(@Param('id', ParseObjectIdPipe) id: string, @Body() updateProductDto: UpdateProductDto) {
+    console.log('=== UPDATE PRODUCT DEBUG ===');
+    console.log('Product ID:', id);
+    console.log('Update DTO:', JSON.stringify(updateProductDto, null, 2));
+    console.log('DTO type:', typeof updateProductDto);
+    console.log('============================');
     return this.productsService.update(id, updateProductDto);
   }
 

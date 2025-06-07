@@ -5,14 +5,13 @@ import { createContext, useContext, useState, useEffect } from "react"
 import { apiService } from "../services/api"
 import type { User, ViewMode } from "../types"
 
-interface AuthContextType {
-  user: User | null
+interface AuthContextType {  user: User | null
   viewMode: ViewMode | null
   login: (email: string, password: string) => Promise<void>
   register: (userData: any) => Promise<void>
   logout: () => void
   switchToComprador: () => void
-  switchToAdmin: () => void
+  switchToOriginalRole: () => void
   isAuthenticated: boolean
   isLoading: boolean
 }
@@ -34,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = await apiService.checkAuthStatus(token)
         setUser(userData)
         setViewMode({
-          current: userData.role === "comprador" ? "comprador" : "admin",
+          current: userData.role,
           originalRole: userData.role,
         })
       }
@@ -51,20 +50,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await apiService.login(email, password)
 
       // Guardar token
-      localStorage.setItem("token", data.token)      // Obtener datos completos del usuario
+      localStorage.setItem("token", data.token)
+      // Obtener datos completos del usuario
       const userData = await apiService.checkAuthStatus(data.token)
       setUser(userData)
       setViewMode({
-        current: userData.role === "comprador" ? "comprador" : "admin",
+        current: userData.role,
         originalRole: userData.role,
-      })    } catch (error) {
+      })
+    } catch (error) {
       throw error
     }
   }
 
   const register = async (userData: any) => {
     try {
-      await apiService.register({        email: userData.email,
+      await apiService.register({
+        email: userData.email,
         password: userData.password,
         name: userData.name, // Use name for API to match backend
         rol: userData.rol, // Keep rol for the API call (DTO expects rol)
@@ -88,10 +90,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setViewMode({ ...viewMode, current: "comprador" })
     }
   }
-
-  const switchToAdmin = () => {
-    if (viewMode && viewMode.originalRole !== "comprador") {
-      setViewMode({ ...viewMode, current: "admin" })
+  const switchToOriginalRole = () => {
+    if (viewMode) {
+      setViewMode({ ...viewMode, current: viewMode.originalRole })
     }
   }
 
@@ -102,9 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         viewMode,
         login,
         register,
-        logout,
-        switchToComprador,
-        switchToAdmin,
+        logout,        switchToComprador,
+        switchToOriginalRole,
         isAuthenticated: !!user,
         isLoading,
       }}
