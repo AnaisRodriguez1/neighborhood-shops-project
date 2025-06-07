@@ -149,7 +149,7 @@ export default function TiendaDetallePage() {
                 </div>
 
                 {/* Action Buttons */}
-                {!isCompradorView && (isOwner || user?.rol === "presidente") && (
+                {!isCompradorView && (isOwner || user?.role === "presidente") && (
                   <div className="flex space-x-2">
                     <Link
                       to={`/tiendas/${shop.id}/editar`}
@@ -313,7 +313,7 @@ export default function TiendaDetallePage() {
                 ? "Esta tienda aún no tiene productos disponibles."
                 : "Comienza agregando productos a tu tienda."}
             </p>
-            {!isCompradorView && (isOwner || user?.rol === "presidente") && (
+            {!isCompradorView && (isOwner || user?.role === "presidente") && (
               <Link
                 to={`/tiendas/${shop.id}/productos/nuevo`}
                 className="inline-flex items-center space-x-2 bg-blue-600 dark:bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"

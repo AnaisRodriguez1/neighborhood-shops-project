@@ -42,11 +42,9 @@ export default function CrearProductoPage() {
   const loadShops = async () => {
     try {
       const response = await apiService.getShops()
-      const allShops = response.data || response
-
-      // Filtrar tiendas según el rol
+      const allShops = response.data || response      // Filtrar tiendas según el rol
       let userShops = allShops
-      if (user?.rol === "locatario") {
+      if (user?.role === "locatario") {
         userShops = allShops.filter((shop: Shop) => shop.locatarioId === user.id)
       }
 
@@ -115,9 +113,8 @@ export default function CrearProductoPage() {
       ...prev,
       [name]: value,
     }))
-  }
-  // Verificar permisos
-  if (user?.rol === "comprador") {
+  }  // Verificar permisos
+  if (user?.role === "comprador") {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">

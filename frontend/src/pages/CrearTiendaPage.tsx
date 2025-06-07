@@ -19,11 +19,10 @@ export default function CrearTiendaPage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-
   const { user } = useAuth()
   const navigate = useNavigate()
   // Verificar que el usuario sea locatario
-  if (user?.rol !== "locatario") {
+  if (user?.role !== "locatario") {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
