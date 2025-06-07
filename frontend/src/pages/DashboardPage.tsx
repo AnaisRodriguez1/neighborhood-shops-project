@@ -8,9 +8,8 @@ export default function DashboardPage() {
   const { user, viewMode, switchToComprador, switchToAdmin } = useAuth()
 
   if (!user) return null
-
   const isAdmin = viewMode?.current === "admin"
-  const canSwitchView = user.rol !== "comprador"
+  const canSwitchView = user.role !== "comprador"
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,9 +17,8 @@ export default function DashboardPage() {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Bienvenido, {user.nombre}</h1>
-              <p className="text-gray-600 dark:text-gray-300 mt-1">
-                Rol: {user.rol} | Vista: {viewMode?.current === "admin" ? "Administrador" : "Comprador"}
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Bienvenido, {user.nombre}</h1>              <p className="text-gray-600 dark:text-gray-300 mt-1">
+                Rol: {user.role} | Vista: {viewMode?.current === "admin" ? "Administrador" : "Comprador"}
               </p>
             </div>
 
@@ -69,10 +67,8 @@ export default function DashboardPage() {
                     <p className="text-gray-600 dark:text-gray-300 text-sm">Gestionar productos</p>
                   </div>
                 </div>
-              </Link>
-
-              {/* Crear Tienda (solo locatarios) */}
-              {user.rol === "locatario" && (
+              </Link>              {/* Crear Tienda (solo locatarios) */}
+              {user.role === "locatario" && (
                 <Link
                   to="/crear-tienda"
                   className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
@@ -87,10 +83,8 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </Link>
-              )}
-
-              {/* Usuarios (solo presidente) */}
-              {user.rol === "presidente" && (
+              )}              {/* Usuarios (solo presidente) */}
+              {user.role === "presidente" && (
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
@@ -113,9 +107,7 @@ export default function DashboardPage() {
                 >
                   <h3 className="font-medium text-gray-900 dark:text-white">Ver Todas las Tiendas</h3>
                   <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">Explorar el catálogo completo</p>
-                </Link>
-
-                {user.rol === "locatario" && (
+                </Link>                {user.role === "locatario" && (
                   <Link
                     to="/mis-productos"
                     className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -125,7 +117,7 @@ export default function DashboardPage() {
                   </Link>
                 )}
 
-                {user.rol === "presidente" && (
+                {user.role === "presidente" && (
                   <button className="p-4 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left">
                     <h3 className="font-medium text-red-900 dark:text-red-400">Eliminar Todo</h3>
                     <p className="text-red-600 dark:text-red-500 text-sm mt-1">Limpiar base de datos</p>

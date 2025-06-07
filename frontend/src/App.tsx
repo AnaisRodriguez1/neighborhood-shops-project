@@ -4,6 +4,7 @@ import { CartProvider } from "./context/CartContext"
 import { ThemeProvider } from "./context/ThemeContext"
 import Header from "./components/Layout/Header"
 import ProtectedRoute from "./components/ProtectedRoute"
+import "./App.css"
 
 // Pages
 import HomePage from "./pages/HomePage"
@@ -16,13 +17,13 @@ import CrearTiendaPage from "./pages/CrearTiendaPage"
 import CrearProductoPage from "./pages/CrearProductoPage"
 import CarritoPage from "./pages/CarritoPage"
 
-function App() {
-  return (
+function App() {  return (
     <ThemeProvider>
       <AuthProvider>
         <CartProvider>
           <BrowserRouter>
-            <div className="min-h-screen bg-background transition-colors duration-300">
+            <div className="app-container"></div>
+            <div className="relative z-10 min-h-screen">
               <Header />
               <Routes>
               {/* Public routes */}
@@ -98,13 +99,12 @@ function App() {
                     </div>
                   </ProtectedRoute>
                 }
-                            />
-            </Routes>
-          </div>
-        </BrowserRouter>
-      </CartProvider>
-    </AuthProvider>
-  </ThemeProvider>
+                            />            </Routes>
+            </div>
+          </BrowserRouter>
+        </CartProvider>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

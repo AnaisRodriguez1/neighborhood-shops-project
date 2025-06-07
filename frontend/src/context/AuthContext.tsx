@@ -27,7 +27,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     checkAuthStatus()
   }, [])
-
   const checkAuthStatus = async () => {
     try {
       const token = localStorage.getItem("token")
@@ -35,8 +34,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = await apiService.checkAuthStatus(token)
         setUser(userData)
         setViewMode({
-          current: userData.rol === "comprador" ? "comprador" : "admin",
-          originalRole: userData.rol,
+          current: userData.role === "comprador" ? "comprador" : "admin",
+          originalRole: userData.role,
         })
       }
     } catch (error) {
@@ -52,14 +51,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await apiService.login(email, password)
 
       // Guardar token
-      localStorage.setItem("token", data.token)
-
-      // Obtener datos completos del usuario
+      localStorage.setItem("token", data.token)      // Obtener datos completos del usuario
       const userData = await apiService.checkAuthStatus(data.token)
       setUser(userData)
       setViewMode({
-        current: userData.rol === "comprador" ? "comprador" : "admin",
-        originalRole: userData.rol,
+        current: userData.role === "comprador" ? "comprador" : "admin",
+        originalRole: userData.role,
       })    } catch (error) {
       throw error
     }
@@ -67,11 +64,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (userData: any) => {
     try {
-      await apiService.register({
-        email: userData.email,
+      await apiService.register({        email: userData.email,
         password: userData.password,
         name: userData.name, // Use name for API to match backend
-        rol: userData.rol,
+        rol: userData.rol, // Keep rol for the API call (DTO expects rol)
       })
 
       // Hacer login automático después del registro

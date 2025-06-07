@@ -3,10 +3,27 @@
 /* Remove any legacy styles and use Tailwind instead */
 .app-container {
   min-height: 100vh;
-  background-color: hsl(var(--background));
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
+  /* Cambiar de color sólido a imagen */
+  background-image: url('./assets/background-claro.jpg');
+  background-size: cover; /* La imagen cubrirá todo el contenedor */
+  background-position: center; /* Centrar la imagen */
+  background-repeat: no-repeat; /* No repetir la imagen */
   color: hsl(var(--foreground));
   transition: background-color 0.3s ease, color 0.3s ease;
+  margin: 0;
+  padding: 0;
+  z-index: -1;
 }
+
+/* Imagen diferente para modo oscuro */
+.dark .app-container {
+  background-image: url('./assets/background.jpg');
+}
+
 
 /* Custom form components that respect theme */
 .form-input {

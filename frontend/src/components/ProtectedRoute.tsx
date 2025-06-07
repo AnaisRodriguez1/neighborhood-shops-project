@@ -23,8 +23,7 @@ export default function ProtectedRoute({ children, requiredRole, requiredViewMod
   if (!user) {
     return <Navigate to="/login" replace />
   }
-
-  if (requiredRole && user.rol !== requiredRole) {
+  if (requiredRole && user.role !== requiredRole) {
     return <Navigate to="/dashboard" replace />
   }
 

@@ -12,4 +12,10 @@ export class SeedController {
   executeSeed() {
     return this.seedService.executeSeed();
   }
+
+  @Delete('users')
+  @Auth(ValidRoles.presidente)
+  clearUsers() {
+    return this.seedService.clearUsers();
+  }
 }

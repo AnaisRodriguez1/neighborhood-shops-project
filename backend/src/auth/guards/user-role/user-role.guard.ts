@@ -10,7 +10,6 @@ export class UserRoleGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector
   ) {}
-
   canActivate(
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
@@ -26,10 +25,8 @@ export class UserRoleGuard implements CanActivate {
     if ( !user ) 
       throw new BadRequestException('User not found');
     
-    for (const role of user.roles ) {
-      if ( validRoles.includes( role ) ) {
-        return true;
-      }
+    if ( validRoles.includes( user.role ) ) {
+      return true;
     }
     
     throw new ForbiddenException(

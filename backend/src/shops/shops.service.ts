@@ -18,7 +18,7 @@ export interface AuthUser {
   _id: string | Types.ObjectId;
   email: string;
   name: string;
-  roles: string[];
+  role: string;
 }
 
 @Injectable()

@@ -2,7 +2,7 @@ export interface User {
   id: string
   email: string
   nombre: string
-  rol: "presidente" | "locatario" | "comprador"
+  role: "presidente" | "locatario" | "comprador"
   token?: string
 }
 
