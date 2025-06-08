@@ -23,9 +23,8 @@ export default function CarritoPage() {
     notes: "",
     paymentMethod: "efectivo"
   })
-
   // WebSocket para notificaciones de pedidos
-  const { socket } = useWebSocket({
+  useWebSocket({
     onOrderCreated: (order) => {
       console.log("Pedido creado:", order)
       // Mostrar notificación de éxito

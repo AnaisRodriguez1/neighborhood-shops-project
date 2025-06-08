@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { CheckCircle, Clock, Package, Truck, XCircle } from "lucide-react"
+import { CheckCircle, Clock, Package, XCircle } from "lucide-react"
 
 interface Notification {
   id: string

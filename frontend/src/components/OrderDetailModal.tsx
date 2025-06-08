@@ -344,10 +344,15 @@ export default function OrderDetailModal({
                 <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center">
                     <Truck className="w-5 h-5 mr-2" />
-                    Repartidor
-                  </h4>
+                    Repartidor                  </h4>
                   <div className="text-gray-600 dark:text-gray-300">
-                    <p>ID: {order.deliveryPersonId}</p>
+                    <p>ID: {typeof order.deliveryPersonId === 'string' ? order.deliveryPersonId : order.deliveryPersonId?._id}</p>
+                    {typeof order.deliveryPersonId === 'object' && order.deliveryPersonId && (
+                      <>
+                        <p>Nombre: {order.deliveryPersonId.name}</p>
+                        <p>Email: {order.deliveryPersonId.email}</p>
+                      </>
+                    )}
                   </div>
                 </div>
               )}

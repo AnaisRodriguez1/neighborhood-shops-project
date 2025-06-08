@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { api } from '../services/api'
-import { Clock, Package, CheckCircle, User, MapPin, Phone, AlertCircle } from 'lucide-react'
+import { apiService } from '../services/api'
+import { Clock, Package, CheckCircle, User, MapPin, AlertCircle } from 'lucide-react'
 
 interface OrderItem {
   product: {
@@ -82,11 +82,10 @@ export default function PedidosPendientesPage() {
   useEffect(() => {
     loadPendingOrders()
   }, [])
-
   const loadPendingOrders = async () => {
     try {
       setLoading(true)
-      const ordersData = await api.getMyShopPendingOrders()
+      const ordersData = await apiService.getMyShopPendingOrders()
       console.log('Pedidos pendientes:', ordersData)
       setOrders(ordersData || [])
     } catch (error) {
@@ -96,11 +95,10 @@ export default function PedidosPendientesPage() {
       setLoading(false)
     }
   }
-
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
       setUpdatingOrder(orderId)
-      await api.updateOrderStatus(orderId, newStatus)
+      await apiService.updateOrderStatus(orderId, newStatus)
       
       // Si el estado es "entregado", remover de la lista
       if (newStatus === 'entregado') {
