@@ -70,10 +70,9 @@ async function testOrderCreation() {
     const orderData = await orderResponse.json();
     console.log('Order Status:', orderResponse.status);
     console.log('Order Response:', JSON.stringify(orderData, null, 2));
-    
-    if (orderResponse.status === 201) {
+      if (orderResponse.status === 201) {
       console.log('✅ ORDER CREATED SUCCESSFULLY!');
-      console.log('Order Number:', orderData.orderNumber);
+      console.log('Order Number:', orderData.order.orderNumber);
     } else {
       console.log('❌ ORDER CREATION FAILED');
     }

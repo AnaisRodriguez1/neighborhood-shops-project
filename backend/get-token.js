@@ -15,8 +15,7 @@ async function getToken() {
 
     const data = await response.json();
     console.log('Login Status:', response.status);
-    
-    if (response.status === 200) {
+      if (response.status === 200 || response.status === 201) {
       console.log('✅ Login successful!');
       console.log('Token:', data.token);
       return data.token;

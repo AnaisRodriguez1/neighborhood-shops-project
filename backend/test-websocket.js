@@ -50,9 +50,12 @@ async function testWebSocket() {
     
     console.log('📡 Joined client room for notifications');
   });
-
   socket.on('connect_error', (error) => {
     console.error('❌ Socket.IO connection error:', error);
+    setTimeout(() => {
+      console.log('🔚 Exiting due to connection error...');
+      process.exit(1);
+    }, 2000);
   });
 
   socket.on('disconnect', (reason) => {
@@ -75,13 +78,24 @@ async function testWebSocket() {
   socket.on('delivery-location-updated', (data) => {
     console.log('📍 DELIVERY LOCATION UPDATED:', JSON.stringify(data, null, 2));
   });
-
   // Keep the connection alive for testing
   setTimeout(() => {
-    console.log('⏰ Closing Socket.IO connection after 60 seconds...');
+    console.log('⏰ Closing Socket.IO connection after 10 seconds...');
     socket.disconnect();
-  }, 60000);
+    // Ensure the process exits
+    setTimeout(() => {
+      console.log('🔚 Test completed, exiting...');
+      process.exit(0);
+    }, 1000);
+  }, 10000);
 }
 
 console.log('🚀 Starting WebSocket test...');
+
+// Handle process interruption (Ctrl+C)
+process.on('SIGINT', () => {
+  console.log('\n🛑 Process interrupted by user');
+  process.exit(0);
+});
+
 testWebSocket();

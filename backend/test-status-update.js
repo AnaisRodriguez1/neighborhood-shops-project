@@ -95,11 +95,22 @@ async function testStatusUpdates() {
 
   // Wait for connection
   await new Promise(resolve => setTimeout(resolve, 2000));
-
   // Test with a known order ID - let's use one we can create first
   console.log('\n📦 Creating test order first...');
   
-  try {
+  try {    // First, get products from the shop to get a valid product ID
+    const productsResponse = await fetch('http://localhost:8080/api/products/shop/66523a50123a4567890abc01');
+    const productsData = await productsResponse.json();
+    
+    if (!productsData || productsData.length === 0) {
+      console.error('❌ No products found for shop');
+      socket.disconnect();
+      return;
+    }
+    
+    const firstProduct = productsData[0];
+    console.log('Using product:', firstProduct.name, 'ID:', firstProduct.id);
+    
     const orderResponse = await fetch('http://localhost:8080/api/orders', {
       method: 'POST',
       headers: {
@@ -110,7 +121,7 @@ async function testStatusUpdates() {
         shopId: "66523a50123a4567890abc01", // Verdulería El Honguito
         items: [
           {
-            productId: "684501011c5d7d08ca64fbe7", // Aguacate Hass  
+            productId: firstProduct.id, // Use valid product ID
             quantity: 1
           }
         ],
@@ -124,7 +135,7 @@ async function testStatusUpdates() {
         },
         paymentMethod: "efectivo"
       })
-    });    const orderData = await orderResponse.json();
+    });const orderData = await orderResponse.json();
     console.log('✅ Test order created:', orderData.order?.id);
     
     const orderId = orderData.order?.id;
@@ -153,10 +164,20 @@ async function testStatusUpdates() {
   } catch (error) {
     console.error('❌ Error in test:', error);
   }
-
   console.log('\n🔚 Test completed. Disconnecting...');
   socket.disconnect();
+  // Ensure the process exits
+  setTimeout(() => {
+    console.log('🔚 Exiting...');
+    process.exit(0);
+  }, 1000);
 }
 
 // Run the test
+// Handle process interruption (Ctrl+C)
+process.on('SIGINT', () => {
+  console.log('\n🛑 Process interrupted by user');
+  process.exit(0);
+});
+
 testStatusUpdates().catch(console.error);

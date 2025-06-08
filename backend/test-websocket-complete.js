@@ -23,7 +23,21 @@ async function getAuthToken() {
 }
 
 async function createTestOrder(token) {
-  try {
+  try {    // First, get products from the shop to get a valid product ID
+    const productsResponse = await fetch('http://localhost:8080/api/products/shop/66523a50123a4567890abc01');
+    const productsData = await productsResponse.json();
+    
+    console.log('Products response status:', productsResponse.status);
+    console.log('Products found:', productsData.length);
+    
+    if (!productsData || productsData.length === 0) {
+      console.error('❌ No products found for shop');
+      return null;
+    }
+    
+    const firstProduct = productsData[0];
+    console.log('Using product:', firstProduct.name, 'ID:', firstProduct.id);
+    
     const response = await fetch('http://localhost:8080/api/orders', {
       method: 'POST',
       headers: {
@@ -33,7 +47,7 @@ async function createTestOrder(token) {
       body: JSON.stringify({        shopId: "66523a50123a4567890abc01", // Verdulería El Honguito
         items: [
           {
-            productId: "684501011c5d7d08ca64fbe7", // Aguacate Hass (first product from API response)
+            productId: firstProduct.id, // Use valid product ID
             quantity: 1
           }
         ],
@@ -149,10 +163,13 @@ async function testCompleteWebSocketFlow() {
     // Step 1: Create a new order
     console.log('🆕 Step 1: Creating new order...');
     const order = await createTestOrder(token);
-    
-    if (!order) {
+      if (!order) {
       console.error('❌ Failed to create order');
       socket.disconnect();
+      setTimeout(() => {
+        console.log('🔚 Exiting due to order creation error...');
+        process.exit(1);
+      }, 1000);
       return;
     }
     
@@ -188,15 +205,22 @@ async function testCompleteWebSocketFlow() {
     console.log('='.repeat(50));
     console.log('🎉 Complete order flow test finished!');
     console.log('Keeping connection alive for 10 more seconds to see any final notifications...');
-    
-    setTimeout(() => {
+      setTimeout(() => {
       console.log('⏰ Closing Socket.IO connection...');
       socket.disconnect();
+      // Ensure the process exits
+      setTimeout(() => {
+        console.log('🔚 Test completed, exiting...');
+        process.exit(0);
+      }, 1000);
     }, 10000);
   });
-
   socket.on('connect_error', (error) => {
     console.error('❌ Socket.IO connection error:', error);
+    setTimeout(() => {
+      console.log('🔚 Exiting due to connection error...');
+      process.exit(1);
+    }, 2000);
   });
 
   socket.on('disconnect', (reason) => {
@@ -237,4 +261,11 @@ async function testCompleteWebSocketFlow() {
 }
 
 console.log('🚀 Starting Complete WebSocket & Order Management Test...');
+
+// Handle process interruption (Ctrl+C)
+process.on('SIGINT', () => {
+  console.log('\n🛑 Process interrupted by user');
+  process.exit(0);
+});
+
 testCompleteWebSocketFlow();
