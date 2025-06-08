@@ -76,4 +76,77 @@ export class AuthService {
     return token;
 
   }
+
+  async updateDeliveryInfo(userId: string, updateDeliveryInfoDto: any) {
+    try {
+      const user = await this.userModel.findById(userId);
+      
+      if (!user) {
+        throw new UnauthorizedException('Usuario no encontrado');
+      }
+
+      if (user.role !== 'repartidor') {
+        throw new UnauthorizedException('Solo los repartidores pueden actualizar información de entrega');
+      }
+
+      const { vehicle, isAvailable, lat, lng } = updateDeliveryInfoDto;
+
+      if (!user.deliveryInfo) {
+        user.deliveryInfo = {
+          vehicle: vehicle || 'bicicleta',
+          isAvailable: isAvailable || false,
+          currentLocation: lat && lng ? { lat, lng } : undefined
+        };
+      } else {
+        if (vehicle !== undefined) user.deliveryInfo.vehicle = vehicle;
+        if (isAvailable !== undefined) user.deliveryInfo.isAvailable = isAvailable;
+        if (lat !== undefined && lng !== undefined) {
+          user.deliveryInfo.currentLocation = { lat, lng };
+        }
+      }
+
+      await user.save();
+
+      return {
+        message: 'Información de entrega actualizada exitosamente',
+        deliveryInfo: user.deliveryInfo
+      };
+
+    } catch (error) {
+      handleExceptions(error, 'la información de entrega', 'actualizar');
+    }
+  }
+
+  async getAvailableDeliveryPersons() {
+    try {
+      const deliveryPersons = await this.userModel
+        .find({
+          role: 'repartidor',
+          isActive: true,
+          'deliveryInfo.isAvailable': true
+        })
+        .select('name email deliveryInfo')
+        .exec();
+
+      return deliveryPersons;
+    } catch (error) {
+      handleExceptions(error, 'los repartidores', 'obtener');
+    }
+  }
+
+  async getAllDeliveryPersons() {
+    try {
+      const deliveryPersons = await this.userModel
+        .find({
+          role: 'repartidor',
+          isActive: true
+        })
+        .select('name email deliveryInfo isActive')
+        .exec();
+
+      return deliveryPersons;
+    } catch (error) {
+      handleExceptions(error, 'los repartidores', 'obtener');
+    }
+  }
 }

@@ -5,6 +5,7 @@ import { SeedController } from './seed.controller';
 import { Product, ProductSchema } from 'src/products/entities/product.entity';
 import { Shop, ShopSchema } from 'src/shops/entities/shop.entity';
 import { User, UserSchema } from 'src/auth/entities/user.entity';
+import { Order, OrderSchema } from 'src/orders/entities/order.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
@@ -12,7 +13,8 @@ import { AuthModule } from '../auth/auth.module';
     AuthModule,    MongooseModule.forFeature([
       { name: Product.name, schema: ProductSchema },
       { name: Shop.name, schema: ShopSchema },
-      { name: User.name, schema: UserSchema }
+      { name: User.name, schema: UserSchema },
+      { name: Order.name, schema: OrderSchema }
     ])
   ],
 

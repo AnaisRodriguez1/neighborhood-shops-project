@@ -9,6 +9,7 @@ import { CommonModule } from './common/common.module';
 import { ShopsModule } from './shops/shops.module';
 import { AuthModule } from './auth/auth.module';
 import { SeedModule } from './seed/seed.module';
+import { OrdersModule } from './orders/orders.module';
 import { EnvConfiguration } from './common/config/env.config';
 
 
@@ -36,11 +37,11 @@ console.log('Mongo URI:', mongoUri);
         return connection;
       },
       dbName: 'neighborhood-shops-project',
-    }),
-
-    ProductsModule,
+    }),    ProductsModule,
 
     ShopsModule,
+
+    OrdersModule,
 
     CommonModule,
 

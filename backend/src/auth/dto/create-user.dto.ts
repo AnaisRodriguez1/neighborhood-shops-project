@@ -19,8 +19,7 @@ export class CreateUserDto {
     @MinLength(1, { message: 'El nombre es obligatorio.' })
     name: string;
 
-    @IsOptional()
-    @IsString({ message: 'El rol debe ser un texto válido.' })
-    @IsIn(['comprador', 'locatario', 'presidente'], { message: 'El rol debe ser: comprador, locatario o presidente.' })
+    @IsOptional()    @IsString({ message: 'El rol debe ser un texto válido.' })
+    @IsIn(['comprador', 'locatario', 'presidente', 'repartidor'], { message: 'El rol debe ser: comprador, locatario, presidente o repartidor.' })
     rol?: string;
 }
