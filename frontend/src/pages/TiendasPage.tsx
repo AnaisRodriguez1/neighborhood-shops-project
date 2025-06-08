@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { apiService } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { Star, Clock, MapPin, Truck, Phone, Mail, Store } from "lucide-react";
