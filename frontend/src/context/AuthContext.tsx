@@ -62,15 +62,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error
     }
   }
-
   const register = async (userData: any) => {
     try {
-      await apiService.register({
+      // Prepare the registration data
+      const registrationData: any = {
         email: userData.email,
         password: userData.password,
-        name: userData.name, // Use name for API to match backend
-        rol: userData.rol, // Keep rol for the API call (DTO expects rol)
-      })
+        name: userData.name,
+        rol: userData.rol,
+      }
+
+      // Add role-specific data if provided
+      if (userData.deliveryInfo) {
+        registrationData.deliveryInfo = userData.deliveryInfo
+      }
+      if (userData.shopData) {
+        registrationData.shopData = userData.shopData
+      }
+
+      await apiService.register(registrationData)
 
       // Hacer login automático después del registro
       await login(userData.email, userData.password)

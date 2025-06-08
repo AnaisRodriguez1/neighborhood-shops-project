@@ -3,6 +3,7 @@ import { CreateUserDto,LoginUserDto } from './dto';
 import { handleExceptions } from 'src/common/helpers/exception-handler.helper';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './entities/user.entity';
+import { Shop } from '../shops/entities/shop.entity';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
@@ -10,22 +11,44 @@ import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-
   constructor(
     @InjectModel(User.name)
     private readonly userModel: Model<User>,
+    @InjectModel(Shop.name)
+    private readonly shopModel: Model<Shop>,
     private readonly jwtService:JwtService,
   
-  ){}  async create(createUserDto: CreateUserDto) {
+  ){}async create(createUserDto: CreateUserDto & { deliveryInfo?: any; shopData?: any }) {
     try {
 
-      const {password, rol, ...userData} = createUserDto;
+      const {password, rol, deliveryInfo, shopData, ...userData} = createUserDto;
 
-      const user = await this.userModel.create({
+      // Create user with delivery info if provided
+      const userPayload: any = {
         ...userData,
         password: bcrypt.hashSync(password,10),
         role: rol || 'comprador'
-      });
+      };
+
+      // Add delivery info for repartidores
+      if (rol === 'repartidor' && deliveryInfo) {
+        userPayload.deliveryInfo = {
+          vehicle: deliveryInfo.vehicle || 'bicicleta',
+          isAvailable: deliveryInfo.isAvailable || false,
+          currentLocation: deliveryInfo.lat && deliveryInfo.lng 
+            ? { lat: deliveryInfo.lat, lng: deliveryInfo.lng }
+            : undefined
+        };
+      }
+
+      const user = await this.userModel.create(userPayload);      // Create shop for locatarios
+      if (rol === 'locatario' && shopData) {
+        const shop = new this.shopModel({
+          ...shopData,
+          ownerId: user._id,
+        });
+        await shop.save();
+      }
 
       //Va a regresar un JWT de la información del usuario 
       // (en este caso correo) sin el password
@@ -41,7 +64,7 @@ export class AuthService {
     } catch (error) {
       handleExceptions(error, 'el usuario', 'identificar');
     }
-  }  async login(loginUserDto: LoginUserDto) {
+  }async login(loginUserDto: LoginUserDto) {
     const { password, email } = loginUserDto;
     // En Mongoose, el filtro va directo y select es un método encadenado
     const user = await this.userModel.findOne({ email })

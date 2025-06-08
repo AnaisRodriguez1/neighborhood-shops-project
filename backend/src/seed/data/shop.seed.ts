@@ -4,7 +4,7 @@ import slugify from 'slugify';
 export const shops = [
   {
     _id: new Types.ObjectId('66523a50123a4567890abc01'),
-    ownerId: new Types.ObjectId('6833b8b13a4d7067a5b9ffb8'),
+    ownerId: new Types.ObjectId('68453456ff372f0db4d4e76e'),
     name: 'Verdulería El Honguito',
     slug: slugify('Verdulería El Honguito', { lower: true, strict: true }),    description: 'Frutas y verduras frescas directo del valle de Elqui y La Serena.',
     address: 'Av. Francisco de Aguirre 485, La Serena, Región de Coquimbo',
