@@ -85,10 +85,15 @@ export class ShopsController {
   findByOwner(@Param('ownerId', ParseObjectIdPipe) ownerId: string) {
     return this.shopsService.findByOwner(ownerId);
   }
-
   @Get('my-shops')
   @Auth(ValidRoles.locatario, ValidRoles.presidente)
   findMyShops(@GetUser() user: AuthUser) {
+    console.log('🏪 my-shops request from user:', {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role
+    });
     return this.shopsService.findByOwner(user._id.toString());
   }
 }
