@@ -133,9 +133,59 @@ export const apiService = {
     const { data } = await api.get(`/auth/admin/users?page=${page}&limit=${limit}`)
     return data
   },
-
   adminDeleteUser: async (userId: string) => {
     const { data } = await api.delete(`/auth/admin/users/${userId}`)
+    return data
+  },
+
+  // Orders
+  createOrder: async (orderData: any) => {
+    const { data } = await api.post("/orders", orderData)
+    return data
+  },
+
+  getOrders: async (page?: number, limit?: number) => {
+    const params = new URLSearchParams()
+    if (page) params.append("page", page.toString())
+    if (limit) params.append("limit", limit.toString())
+    const query = params.toString() ? `?${params.toString()}` : ""
+
+    const { data } = await api.get(`/orders${query}`)
+    return data
+  },
+
+  getOrdersByShop: async (shopId: string, page?: number, limit?: number) => {
+    const params = new URLSearchParams()
+    if (page) params.append("page", page.toString())
+    if (limit) params.append("limit", limit.toString())
+    const query = params.toString() ? `?${params.toString()}` : ""
+
+    const { data } = await api.get(`/orders/shop/${shopId}${query}`)
+    return data
+  },
+
+  getOrder: async (id: string) => {
+    const { data } = await api.get(`/orders/${id}`)
+    return data
+  },
+
+  updateOrderStatus: async (orderId: string, status: string) => {
+    const { data } = await api.patch(`/orders/${orderId}/status`, { status })
+    return data
+  },
+
+  assignDeliveryPerson: async (orderId: string, deliveryPersonId: string) => {
+    const { data } = await api.patch(`/orders/${orderId}/assign-delivery`, { deliveryPersonId })
+    return data
+  },
+
+  getMyOrders: async (page?: number, limit?: number) => {
+    const params = new URLSearchParams()
+    if (page) params.append("page", page.toString())
+    if (limit) params.append("limit", limit.toString())
+    const query = params.toString() ? `?${params.toString()}` : ""
+
+    const { data } = await api.get(`/orders/my-orders${query}`)
     return data
   },
 

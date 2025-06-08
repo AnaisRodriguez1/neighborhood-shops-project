@@ -19,6 +19,7 @@ export interface Tienda {
   rating?: number
   score?: number
   ownerId: string
+  isActive?: boolean
 }
 
 export interface Producto {
@@ -64,4 +65,48 @@ export interface CartItem {
 export interface ViewMode {
   current: "presidente" | "locatario" | "comprador"
   originalRole: "presidente" | "locatario" | "comprador"
+}
+
+export interface DeliveryAddress {
+  street: string
+  city: string
+  postalCode: string
+  country: string
+  additionalInfo?: string
+}
+
+export interface OrderItem {
+  productId: string
+  quantity: number
+  price: number
+  productName?: string
+}
+
+export interface Order {
+  id: string
+  _id?: string
+  customerId: string
+  shopId: string | Tienda
+  shop?: Tienda
+  items: OrderItem[]
+  totalAmount: number
+  total?: number // Computed property for UI convenience
+  orderNumber?: string // Auto-generated order number
+  status: 'pendiente' | 'confirmado' | 'preparando' | 'listo' | 'en_entrega' | 'entregado' | 'cancelado'
+  deliveryAddress: DeliveryAddress
+  deliveryType?: 'delivery' | 'pickup'
+  deliveryPersonId?: string
+  notes?: string
+  orderDate: string
+  estimatedDeliveryTime?: string
+  actualDeliveryTime?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface OrderSummary {
+  totalOrders: number
+  pendingOrders: number
+  completedOrders: number
+  totalRevenue: number
 }

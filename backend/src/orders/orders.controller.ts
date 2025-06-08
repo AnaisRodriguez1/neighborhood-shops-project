@@ -31,8 +31,7 @@ export class OrdersController {
   @Auth(ValidRoles.presidente)
   findAll(@Query() paginationDto: PaginationDto) {
     return this.ordersService.findAll(paginationDto);
-  }
-  @Get('my-orders')
+  }  @Get('my-orders')
   @Auth(ValidRoles.comprador, ValidRoles.presidente)
   findMyOrders(
     @GetUser() user: AuthUser,

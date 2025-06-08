@@ -297,4 +297,20 @@ export class ShopsService {  constructor(
       handleExceptions(error, 'las métricas del administrador', 'obtener');
     }
   }
+
+  async findByOwner(ownerId: string) {
+    if (!Types.ObjectId.isValid(ownerId)) {
+      throw new BadRequestException(`'${ownerId}' no es un ObjectId válido.`);
+    }
+
+    try {
+      return await this.shopModel
+        .find({ ownerId, isActive: true })
+        .sort({ name: 1 })
+        .populate('ownerId', 'name email')
+        .exec();
+    } catch (error) {
+      handleExceptions(error, 'las tiendas del propietario', 'listar');
+    }
+  }
 }

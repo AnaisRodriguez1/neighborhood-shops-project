@@ -18,17 +18,30 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
+  
   const addToCart = (producto: Producto, tienda: Tienda, cantidad = 1) => {
+    console.log("🛒 CartContext: Agregando producto al carrito")
+    console.log("📦 Producto:", producto.name)
+    console.log("🏪 Tienda:", tienda.name)
+    console.log("🔢 Cantidad:", cantidad)
+    
     setItems((prev) => {
+      console.log("📋 Items actuales en carrito:", prev)
       const existingItem = prev.find((item) => item.product.id === producto.id)
 
       if (existingItem) {
-        return prev.map((item) =>
+        console.log("♻️ Producto ya existe, actualizando cantidad")
+        const newItems = prev.map((item) =>
           item.product.id === producto.id ? { ...item, quantity: item.quantity + cantidad } : item,
         )
+        console.log("📋 Nuevos items:", newItems)
+        return newItems
       }
 
-      return [...prev, { product: producto, shop: tienda, quantity: cantidad }]
+      console.log("✨ Producto nuevo, agregando al carrito")
+      const newItems = [...prev, { product: producto, shop: tienda, quantity: cantidad }]
+      console.log("📋 Nuevos items:", newItems)
+      return newItems
     })
   }
 

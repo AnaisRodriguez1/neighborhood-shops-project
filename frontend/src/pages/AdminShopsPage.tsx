@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
-import { Store, Trash2, AlertTriangle, Star, MapPin, Users, Package } from 'lucide-react';
+import { Store, Trash2, AlertTriangle, Star, MapPin, Users } from 'lucide-react';
 import { Tienda } from '../types';
 import { capitalizeWords } from '../utils/format';
 

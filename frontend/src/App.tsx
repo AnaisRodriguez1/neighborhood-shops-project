@@ -16,6 +16,7 @@ import TiendaDetallePage from "./pages/TiendaDetallePage"
 import CrearTiendaPage from "./pages/CrearTiendaPage"
 import CrearProductoPage from "./pages/CrearProductoPage"
 import CarritoPage from "./pages/CarritoPage"
+import MisPedidosPage from "./pages/MisPedidosPage"
 import AdminMetricsPage from "./pages/AdminMetricsPage"
 import AdminShopsPage from "./pages/AdminShopsPage"
 import AdminProductsPage from "./pages/AdminProductsPage"
@@ -72,13 +73,20 @@ function App() {
                       <CrearProductoPage />
                     </ProtectedRoute>
                   }
-                />
-
-                <Route
+                />                <Route
                   path="/carrito"
                   element={
                     <ProtectedRoute requiredViewMode="comprador">
                       <CarritoPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/mis-pedidos"
+                  element={
+                    <ProtectedRoute>
+                      <MisPedidosPage />
                     </ProtectedRoute>
                   }
                 />                {/* Admin routes */}

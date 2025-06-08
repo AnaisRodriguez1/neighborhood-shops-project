@@ -128,17 +128,18 @@ export class OrdersService {
       .exec();
 
     return orders;
-  }
-
-  async findByClient(clientId: string, paginationDto: PaginationDto) {
+  }  async findByClient(clientId: string, paginationDto: PaginationDto) {
     const { limit = 10, offset = 0 } = paginationDto;
 
     if (!Types.ObjectId.isValid(clientId)) {
       throw new BadRequestException(`'${clientId}' no es un ObjectId válido.`);
     }
 
+    // Convert string to ObjectId for proper comparison
+    const clientObjectId = new Types.ObjectId(clientId);
+
     const orders = await this.orderModel
-      .find({ client: clientId })
+      .find({ client: clientObjectId })
       .populate('shop', 'name address')
       .populate('deliveryPerson', 'name email')
       .populate('items.product', 'name price')

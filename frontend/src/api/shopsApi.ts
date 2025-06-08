@@ -65,3 +65,15 @@ export const deleteAllShopsRequest = async () => {
   const { data } = await API.delete('/delete-all');
   return data;
 };
+
+// Get shops by owner
+export const getShopsByOwnerRequest = async (ownerId: string) => {
+  const { data } = await API.get(`/owner/${ownerId}`);
+  return data;
+};
+
+// Get current user's shops
+export const getMyShopsRequest = async () => {
+  const { data } = await API.get('/my-shops');
+  return data;
+};

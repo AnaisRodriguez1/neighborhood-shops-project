@@ -20,7 +20,8 @@ import { AuthUser } from './shops.service'; // 👈 usa la interfaz que definimo
 
 @Controller('shops')
 export class ShopsController {
-  constructor(private readonly shopsService: ShopsService) {}  @Post()
+  constructor(private readonly shopsService: ShopsService) {}
+  @Post()
   @Auth(ValidRoles.locatario)
   create(
     @Body() createShopDto: CreateShopDto,
@@ -77,5 +78,17 @@ export class ShopsController {
   @Auth(ValidRoles.presidente)
   deleteAllShops() {
     return this.shopsService.deleteAllShops();
+  }
+
+  @Get('owner/:ownerId')
+  @Auth(ValidRoles.locatario, ValidRoles.presidente)
+  findByOwner(@Param('ownerId', ParseObjectIdPipe) ownerId: string) {
+    return this.shopsService.findByOwner(ownerId);
+  }
+
+  @Get('my-shops')
+  @Auth(ValidRoles.locatario, ValidRoles.presidente)
+  findMyShops(@GetUser() user: AuthUser) {
+    return this.shopsService.findByOwner(user._id.toString());
   }
 }
