@@ -5,8 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  // Configure CORS with environment-based origins
+  const app = await NestFactory.create(AppModule);  // Configure CORS with environment-based origins
   const allowedOrigins =
     process.env.NODE_ENV === 'production'
       ? [
@@ -14,6 +13,7 @@ async function bootstrap() {
         ]
       : [
           'http://localhost:5173',
+          'http://localhost:5174',
           'https://frontend-neighborhood-shops-project-production.up.railway.app',
         ];
 

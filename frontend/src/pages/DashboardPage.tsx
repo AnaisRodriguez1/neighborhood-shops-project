@@ -1,7 +1,7 @@
 "use client"
 
 import { useAuth } from "../context/AuthContext"
-import { Store, Package, Users, ShoppingCart, Settings } from "lucide-react"
+import { Store, Package, Users, ShoppingCart, Settings, BarChart3 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { apiService } from "../services/api"
@@ -107,6 +107,17 @@ export default function DashboardPage() {  const { user } = useAuth()
                     <p className="text-gray-600 dark:text-gray-300 text-sm">Gestionar productos</p>
                   </div>
                 </div>
+              </Link>              {/* Métricas Administrativas */}
+              <Link to="/admin/metricas" className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Métricas</h3>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">Analíticas y reportes</p>
+                  </div>
+                </div>
               </Link>
 
               {/* Usuarios (solo presidente) */}
@@ -122,7 +133,7 @@ export default function DashboardPage() {  const { user } = useAuth()
                     </div>
                   </div>
                 </div>
-              )}            </div>
+              )}</div>
           </div>
         )}
           {/* Locatario Dashboard */}

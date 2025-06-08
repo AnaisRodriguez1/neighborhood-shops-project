@@ -66,9 +66,14 @@ export const apiService = {
   updateShop: async (id: string, shopData: any) => {
     const { data } = await api.patch(`/shops/${id}`, shopData)
     return data
-  },
-  deleteShop: async (id: string) => {
+  },  deleteShop: async (id: string) => {
     const { data } = await api.delete(`/shops/${id}`)
+    return data
+  },
+
+  // Admin Metrics
+  getAdminMetrics: async () => {
+    const { data } = await api.get("/shops/admin/metrics")
     return data
   },
 

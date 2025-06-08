@@ -28,10 +28,15 @@ export class ShopsController {
   ) {
     return this.shopsService.create(createShopDto, user);
   }
-
   @Get()
   findAll(@Query() paginationDto: PaginationDto) {
     return this.shopsService.findAll(paginationDto);
+  }
+
+  @Get('admin/metrics')
+  @Auth(ValidRoles.presidente)
+  getAdminMetrics() {
+    return this.shopsService.getAdminMetrics();
   }
 
   @Get('id/:id')
