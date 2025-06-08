@@ -135,20 +135,53 @@ export class OrdersService {
       throw new BadRequestException(`'${clientId}' no es un ObjectId válido.`);
     }
 
-    // Convert string to ObjectId for proper comparison
-    const clientObjectId = new Types.ObjectId(clientId);
+    console.log('🔍 Finding orders for client:', clientId);
 
-    const orders = await this.orderModel
-      .find({ client: clientObjectId })
-      .populate('shop', 'name address')
-      .populate('deliveryPerson', 'name email')
-      .populate('items.product', 'name price')
-      .skip(offset)
-      .limit(limit)
-      .sort({ createdAt: -1 })
-      .exec();
+    // Fix any client fields that are stored as strings instead of ObjectId
+    try {
+      const clientObjectId = new Types.ObjectId(clientId);
+      
+      // First, fix any orders where client is stored as string
+      const updateResult = await this.orderModel.updateMany(
+        { client: clientId }, // Find orders where client is a string
+        { $set: { client: clientObjectId } } // Convert to ObjectId
+      );
+      
+      if (updateResult.modifiedCount > 0) {
+        console.log(`🔧 Fixed ${updateResult.modifiedCount} orders with string client field`);
+      }
+      
+      // Debug: Show all orders with their client field types
+      const allOrders = await this.orderModel.find({});
+      console.log('🔍 All orders client field debug:', allOrders.map(order => ({
+        id: order._id,
+        client: order.client,
+        clientType: typeof order.client
+      })));
 
-    return orders;
+      // Use both string and ObjectId queries to ensure we find all orders
+      const orders = await this.orderModel
+        .find({
+          $or: [
+            { client: clientObjectId },
+            { client: clientId } // Also search for string version just in case
+          ]
+        })
+        .populate('shop', 'name address')
+        .populate('deliveryPerson', 'name email')
+        .populate('items.product', 'name price')
+        .skip(offset)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .exec();
+
+      console.log(`📦 Found ${orders.length} orders for client ${clientId}`);
+      return orders;
+      
+    } catch (error) {
+      console.error('❌ Error finding client orders:', error);
+      throw error;
+    }
   }
 
   async findByShop(shopId: string, paginationDto: PaginationDto) {
@@ -312,6 +345,100 @@ export class OrdersService {
 
     } catch (error) {
       handleExceptions(error, 'el pedido', 'asignar repartidor');
+    }
+  }  async findPendingOrdersByShopOwner(user: AuthUser, paginationDto: PaginationDto) {
+    try {
+      console.log('🔍 Finding pending orders for shop owner:', user._id);
+      console.log('🔍 User ID type:', typeof user._id, 'Value:', user._id);
+      
+      const { limit = 10, offset, page } = paginationDto;
+      const calculatedOffset = offset !== undefined ? offset : (page ? (page - 1) * limit : 0);
+
+      // Primero, encontrar las tiendas del usuario
+      const userObjectId = new Types.ObjectId(user._id.toString());
+      console.log('🔍 Searching for shops with ownerId:', userObjectId);
+      
+      const userShops = await this.shopModel.find({ ownerId: userObjectId });
+      console.log('🏪 User shops found:', userShops.length);
+      
+      if (userShops.length > 0) {
+        console.log('🏪 Shop IDs found:', userShops.map(shop => ({ id: shop._id, name: shop.name })));
+      }
+      
+      if (userShops.length === 0) {
+        // Verificar si existen tiendas con este usuario
+        const allShops = await this.shopModel.find({});
+        console.log('🔍 All shops in DB:', allShops.map(shop => ({ 
+          id: shop._id, 
+          name: shop.name, 
+          ownerId: shop.ownerId 
+        })));
+        return [];
+      }      const shopIds = userShops.map(shop => shop._id as Types.ObjectId);
+      const shopIdStrings = userShops.map(shop => (shop._id as Types.ObjectId).toString());
+      console.log('🔍 Looking for orders in shops (ObjectId):', shopIds);
+      console.log('🔍 Looking for orders in shops (String):', shopIdStrings);
+
+      // ARREGLAR DATOS: Convertir shop strings a ObjectId
+      console.log('🔧 Fixing shop field data types...');
+      await this.orderModel.updateMany(
+        { shop: { $type: "string" } },
+        [{ $set: { shop: { $toObjectId: "$shop" } } }]
+      );
+      console.log('✅ Shop field data types fixed');
+
+      // Buscar pedidos pendientes - usando $or para manejar ambos tipos por si acaso
+      const query = { 
+        $or: [
+          { shop: { $in: shopIds } },
+          { shop: { $in: shopIdStrings } }
+        ],
+        status: { $in: ['pendiente', 'confirmado', 'preparando', 'listo'] }
+      };
+      console.log('🔍 Query for orders:', JSON.stringify(query, null, 2));
+      
+      const orders = await this.orderModel
+        .find(query)
+        .populate('client', 'name email')
+        .populate('shop', 'name address')
+        .populate('items.product', 'name price images')
+        .populate('deliveryPerson', 'name email')
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(calculatedOffset)
+        .exec();
+
+      console.log('📦 Found pending orders:', orders.length);
+      
+      // Always show all orders for debugging
+      const allOrders = await this.orderModel.find({});
+      console.log('🔍 All orders in DB:', allOrders.map(order => ({
+        id: order._id,
+        shop: order.shop,
+        shopType: typeof order.shop,
+        status: order.status,
+        client: order.client
+      })));
+      
+      // Show orders specifically in our target shops
+      const ordersInOurShops = await this.orderModel.find({ 
+        $or: [
+          { shop: { $in: shopIds } },
+          { shop: { $in: shopIdStrings } }
+        ]
+      });
+      console.log('🔍 All orders in our shops (any status):', ordersInOurShops.map(order => ({
+        id: order._id,
+        shop: order.shop,
+        shopType: typeof order.shop,
+        status: order.status,
+        client: order.client
+      })));
+      
+      return orders;
+    } catch (error) {
+      console.error('❌ Error finding pending orders:', error);
+      handleExceptions(error, 'los pedidos pendientes', 'obtener');
     }
   }
 

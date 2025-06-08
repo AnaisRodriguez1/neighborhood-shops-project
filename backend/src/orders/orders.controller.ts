@@ -67,6 +67,16 @@ export class OrdersController {
     return this.ordersService.findByDeliveryPerson(user._id.toString(), paginationDto);
   }
 
+  @Get('my-shop-orders/pending')
+  @Auth(ValidRoles.locatario, ValidRoles.presidente)
+  findMyShopPendingOrders(
+    @GetUser() user: AuthUser,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    console.log('🏪 Request for pending shop orders from user:', user.name);
+    return this.ordersService.findPendingOrdersByShopOwner(user, paginationDto);
+  }
+
   @Get(':id')
   @Auth()
   findOne(@Param('id', ParseObjectIdPipe) id: string) {

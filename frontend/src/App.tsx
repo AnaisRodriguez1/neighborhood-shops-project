@@ -21,6 +21,7 @@ import AdminMetricsPage from "./pages/AdminMetricsPage"
 import AdminShopsPage from "./pages/AdminShopsPage"
 import AdminProductsPage from "./pages/AdminProductsPage"
 import AdminUsersPage from "./pages/AdminUsersPage"
+import TodosLosPedidosPage from "./pages/TodosLosPedidosPage"
 
 function App() {
   return (
@@ -80,16 +81,23 @@ function App() {
                       <CarritoPage />
                     </ProtectedRoute>
                   }
-                />
-
-                <Route
+                />                <Route
                   path="/mis-pedidos"
                   element={
                     <ProtectedRoute>
                       <MisPedidosPage />
                     </ProtectedRoute>
                   }
-                />                {/* Admin routes */}
+                />
+
+                <Route
+                  path="/todos-los-pedidos"
+                  element={
+                    <ProtectedRoute requiredRole="locatario">
+                      <TodosLosPedidosPage />
+                    </ProtectedRoute>
+                  }
+                />{/* Admin routes */}
                 <Route
                   path="/admin/metricas"
                   element={

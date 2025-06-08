@@ -189,4 +189,14 @@ export const apiService = {
     return data
   },
 
+  getMyShopPendingOrders: async (page?: number, limit?: number) => {
+    const params = new URLSearchParams()
+    if (page) params.append("page", page.toString())
+    if (limit) params.append("limit", limit.toString())
+    const query = params.toString() ? `?${params.toString()}` : ""
+
+    const { data } = await api.get(`/orders/my-shop-orders/pending${query}`)
+    return data
+  },
+
 }

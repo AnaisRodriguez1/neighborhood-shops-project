@@ -149,22 +149,22 @@ export default function DashboardPage() {
                     <Plus className="w-4 h-4" />
                     <span>Nueva Tienda</span>
                   </Link>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                </div>                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* All Orders Management */}
-                  <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                        <ClipboardList className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Todos los Pedidos</h3>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm">Ver pedidos de todas las tiendas</p>
+                  <Link to="/todos-los-pedidos">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                          <ClipboardList className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Todos los Pedidos</h3>
+                          <p className="text-gray-600 dark:text-gray-300 text-sm">Ver pedidos de todas las tiendas</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
 
                   {/* Sales Analytics */}
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
