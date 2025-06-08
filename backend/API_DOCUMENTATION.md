@@ -465,17 +465,16 @@ node test-websocket-complete.js
 ### 🚀 Scripts de Automatización
 
 #### Ejecutar Todos los Tests
-Para ejecutar todos los tests automáticamente:
+Para ejecutar todos los tests automáticamente (multiplataforma):
 
-**Opción 1: Script Node.js**
 ```bash
 node run-all-tests.js
 ```
 
-**Opción 2: Script PowerShell (Windows)**
-```powershell
-.\run-all-tests.ps1
-```
+**Compatible con:**
+- ✅ Windows (PowerShell/CMD)
+- ✅ Linux (Bash/Zsh)  
+- ✅ macOS (Terminal)
 
 ### 📊 Resultados Esperados
 
