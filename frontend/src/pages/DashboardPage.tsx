@@ -1,7 +1,7 @@
 "use client"
 
 import { useAuth } from "../context/AuthContext"
-import { Store, Package, Users, ShoppingCart, Settings, BarChart3, Plus, ClipboardList } from "lucide-react"
+import { Store, Package, Users, ShoppingCart, Settings, BarChart3, Plus, ClipboardList, Truck } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { getMyShopsRequest } from "../api/shopsApi"
@@ -255,10 +255,8 @@ export default function DashboardPage() {
               </>
             )}
           </div>
-        )}
-
-        {/* Comprador Dashboard */}
-        {!isPresidente && user.role !== "locatario" && (
+        )}        {/* Comprador Dashboard */}
+        {!isPresidente && user.role !== "locatario" && user.role !== "repartidor" && (
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Explorar Tiendas */}
@@ -308,6 +306,50 @@ export default function DashboardPage() {
                 className="inline-block mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Ver Todas las Tiendas
+              </Link>            </div>
+          </div>
+        )}
+
+        {/* Repartidor Dashboard */}
+        {user.role === "repartidor" && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Mis Entregas */}
+              <Link to="/repartidor" className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                    <Truck className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Mis Entregas</h3>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">Gestionar entregas asignadas</p>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Historial de Entregas */}
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                    <Package className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Historial</h3>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">Entregas completadas</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Estado del Repartidor</h2>
+              <p className="text-gray-600 dark:text-gray-300">Revisa tus entregas pendientes y completa las asignaciones...</p>
+              <Link
+                to="/repartidor"
+                className="inline-block mt-4 bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                Ver Mis Entregas
               </Link>
             </div>
           </div>

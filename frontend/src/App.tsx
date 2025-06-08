@@ -22,6 +22,7 @@ import AdminShopsPage from "./pages/AdminShopsPage"
 import AdminProductsPage from "./pages/AdminProductsPage"
 import AdminUsersPage from "./pages/AdminUsersPage"
 import TodosLosPedidosPage from "./pages/TodosLosPedidosPage"
+import RepartidorPage from "./pages/RepartidorPage"
 
 function App() {
   return (
@@ -88,13 +89,29 @@ function App() {
                       <MisPedidosPage />
                     </ProtectedRoute>
                   }
-                />
-
-                <Route
+                />                <Route
                   path="/todos-los-pedidos"
                   element={
                     <ProtectedRoute requiredRole="locatario">
                       <TodosLosPedidosPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/repartidor"
+                  element={
+                    <ProtectedRoute requiredRole="repartidor">
+                      <RepartidorPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/repartidor"
+                  element={
+                    <ProtectedRoute requiredRole="repartidor">
+                      <RepartidorPage />
                     </ProtectedRoute>
                   }
                 />{/* Admin routes */}

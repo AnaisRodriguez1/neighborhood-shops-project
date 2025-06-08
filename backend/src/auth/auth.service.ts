@@ -142,7 +142,6 @@ export class AuthService {  constructor(
       handleExceptions(error, 'la información de entrega', 'actualizar');
     }
   }
-
   async getAvailableDeliveryPersons() {
     try {
       const deliveryPersons = await this.userModel
@@ -151,22 +150,21 @@ export class AuthService {  constructor(
           isActive: true,
           'deliveryInfo.isAvailable': true
         })
-        .select('name email deliveryInfo')
+        .select('_id name email deliveryInfo')
         .exec();
 
       return deliveryPersons;
     } catch (error) {
       handleExceptions(error, 'los repartidores', 'obtener');
     }
-  }
-  async getAllDeliveryPersons() {
+  }  async getAllDeliveryPersons() {
     try {
       const deliveryPersons = await this.userModel
         .find({
           role: 'repartidor',
           isActive: true
         })
-        .select('name email deliveryInfo isActive')
+        .select('_id name email deliveryInfo isActive')
         .exec();
 
       return deliveryPersons;

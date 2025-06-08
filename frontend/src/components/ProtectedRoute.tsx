@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext"
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  requiredRole?: "presidente" | "locatario" | "comprador"
+  requiredRole?: "presidente" | "locatario" | "comprador" | "repartidor"
   requiredViewMode?: "admin" | "comprador"
 }
 

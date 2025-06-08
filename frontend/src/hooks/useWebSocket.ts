@@ -25,23 +25,29 @@ export const useWebSocket = ({ onOrderCreated, onOrderStatusUpdated, onOrderAssi
       : 'https://backend-neighborhood-shops-project-production.up.railway.app/orders', {
       auth: { token },
       transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 3,
+      reconnectionDelay: 3000,
+      reconnectionDelayMax: 10000,
+      timeout: 20000,
     })
 
     socket.on('connect', () => {
       console.log('WebSocket connected')
-        // Join appropriate room based on user role
+      // Join appropriate room based on user role
       if (user.role === 'comprador') {
         socket.emit('join-room', { role: 'comprador', id: user.id })
       } else if (user.role === 'locatario') {
-        // For locatarios, we'll join shop rooms when we know the shop IDs
         socket.emit('join-room', { role: 'locatario', id: user.id })
       } else if (user.role === 'presidente') {
         socket.emit('join-room', { role: 'presidente', id: user.id })
+      } else if (user.role === 'repartidor') {
+        socket.emit('join-room', { role: 'repartidor', id: user.id })
       }
     })
 
-    socket.on('disconnect', () => {
-      console.log('WebSocket disconnected')
+    socket.on('disconnect', (reason) => {
+      console.log('WebSocket disconnected:', reason)
     })
 
     socket.on('connect_error', (error) => {

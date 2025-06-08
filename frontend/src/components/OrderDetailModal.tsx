@@ -1,5 +1,7 @@
-import { X, Clock, User, MapPin, Package, Truck } from 'lucide-react'
+import { X, Clock, User, MapPin, Package, Truck, UserCheck } from 'lucide-react'
 import { Order } from '../types'
+import { useState, useEffect } from 'react'
+import { apiService } from '../services/api'
 
 type OrderStatus = 'pendiente' | 'confirmado' | 'preparando' | 'listo' | 'en_entrega' | 'entregado' | 'cancelado'
 
@@ -8,7 +10,23 @@ interface OrderDetailModalProps {
   isOpen: boolean
   onClose: () => void
   onUpdateStatus?: (orderId: string, newStatus: string) => void
+  onAssignDelivery?: (orderId: string, deliveryPersonId: string) => void
   canUpdateStatus?: boolean
+  canAssignDelivery?: boolean
+}
+
+interface DeliveryPerson {
+  _id: string
+  name: string
+  email: string
+  deliveryInfo: {
+    vehicle: string
+    isAvailable: boolean
+    currentLocation?: {
+      lat: number
+      lng: number
+    }
+  }
 }
 
 const statusColors: Record<OrderStatus, string> = {
@@ -46,8 +64,51 @@ export default function OrderDetailModal({
   isOpen, 
   onClose, 
   onUpdateStatus, 
-  canUpdateStatus = false 
+  onAssignDelivery,
+  canUpdateStatus = false,
+  canAssignDelivery = false
 }: OrderDetailModalProps) {
+  const [availableDeliveryPersons, setAvailableDeliveryPersons] = useState<DeliveryPerson[]>([])
+  const [loadingDeliveryPersons, setLoadingDeliveryPersons] = useState(false)
+  const [assigningDelivery, setAssigningDelivery] = useState(false)
+
+  useEffect(() => {
+    if (isOpen && canAssignDelivery && order?.status === 'listo') {
+      loadAvailableDeliveryPersons()
+    }
+  }, [isOpen, canAssignDelivery, order?.status])
+  const loadAvailableDeliveryPersons = async () => {
+    try {
+      setLoadingDeliveryPersons(true)
+      const response = await apiService.getAvailableDeliveryPersons()
+      console.log('🚚 Available delivery persons response:', response)
+      console.log('🚚 First delivery person:', response?.[0])
+      setAvailableDeliveryPersons(response || [])
+    } catch (error) {
+      console.error('Error loading delivery persons:', error)
+      setAvailableDeliveryPersons([])
+    } finally {    setLoadingDeliveryPersons(false)
+    }
+  }
+
+  const handleAssignDelivery = async (deliveryPersonId: string) => {
+    if (!order || !onAssignDelivery) return
+    
+    console.log('🚚 Attempting to assign delivery person:', deliveryPersonId)
+    console.log('🚚 DeliveryPersonId type:', typeof deliveryPersonId)
+    console.log('🚚 DeliveryPersonId value:', deliveryPersonId)
+    
+    try {
+      setAssigningDelivery(true)
+      await onAssignDelivery(order.id, deliveryPersonId)
+    } catch (error: any) {
+      console.error('Error assigning delivery person:', error)
+      const errorMessage = error?.response?.data?.message || error?.message || 'Error al asignar el repartidor'
+      alert(`Error: ${errorMessage}`)
+    } finally {
+      setAssigningDelivery(false)
+    }
+  }
   if (!isOpen || !order) return null
 
   const handleStatusUpdate = (newStatus: string) => {
@@ -111,8 +172,7 @@ export default function OrderDetailModal({
                     {statusLabels[order.status]}
                   </span>
                 </div>
-                
-                {canUpdateStatus && nextStatusOptions[order.status].length > 0 && (
+                  {canUpdateStatus && nextStatusOptions[order.status].length > 0 && (
                   <div className="flex gap-2">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Cambiar a:</span>
                     {nextStatusOptions[order.status].map((status) => (
@@ -127,6 +187,67 @@ export default function OrderDetailModal({
                   </div>
                 )}
               </div>
+
+              {/* Assign Delivery Person */}
+              {canAssignDelivery && order.status === 'listo' && !order.deliveryPersonId && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h4 className="font-medium text-gray-900 dark:text-white flex items-center mb-4">
+                    <UserCheck className="w-5 h-5 mr-2" />
+                    Asignar Repartidor
+                  </h4>
+                  
+                  {loadingDeliveryPersons ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <span className="ml-2 text-gray-600 dark:text-gray-300">Cargando repartidores...</span>
+                    </div>
+                  ) : availableDeliveryPersons.length === 0 ? (
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">
+                      No hay repartidores disponibles en este momento.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                        Selecciona un repartidor disponible:
+                      </p>
+                      <div className="grid gap-2">                        {availableDeliveryPersons.map((deliveryPerson) => {
+                          console.log('🚚 Delivery person in map:', deliveryPerson)
+                          console.log('🚚 Delivery person _id:', deliveryPerson._id)
+                          return (
+                            <button
+                              key={deliveryPerson._id}
+                              onClick={() => {
+                                console.log('🚚 Button clicked for delivery person:', deliveryPerson._id)
+                                handleAssignDelivery(deliveryPerson._id)
+                              }}
+                              disabled={assigningDelivery}
+                            className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                                <UserCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                              </div>
+                              <div className="text-left">
+                                <p className="font-medium text-gray-900 dark:text-white">{deliveryPerson.name}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  {deliveryPerson.deliveryInfo.vehicle} • Disponible
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-blue-600 dark:text-blue-400">
+                              {assigningDelivery ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                              ) : (
+                                <span className="text-sm font-medium">Asignar</span>                              )}
+                            </div>
+                          </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Items */}
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">

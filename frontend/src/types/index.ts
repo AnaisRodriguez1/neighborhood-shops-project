@@ -2,7 +2,7 @@ export interface User {
   id: string
   email: string
   name: string
-  role: "presidente" | "locatario" | "comprador"
+  role: "presidente" | "locatario" | "comprador" | "repartidor"
   token?: string
 }
 
@@ -95,7 +95,7 @@ export interface Order {
   status: 'pendiente' | 'confirmado' | 'preparando' | 'listo' | 'en_entrega' | 'entregado' | 'cancelado'
   deliveryAddress: DeliveryAddress
   deliveryType?: 'delivery' | 'pickup'
-  deliveryPersonId?: string
+  deliveryPersonId?: string | { _id: string; name: string; email: string }
   notes?: string
   orderDate: string
   estimatedDeliveryTime?: string

@@ -60,16 +60,15 @@ export default function TodosLosPedidosPage() {
       loadOrders()
     }
   }, [user])
-
   const loadOrders = async () => {
     try {
       setLoading(true)
       setError(null)
-      console.log('🏪 Loading all pending orders for shop owner...')
+      console.log('🏪 Loading ALL orders for shop owner...')
       
-      // Use the backend endpoint that gets all pending orders for the shop owner
-      const response = await apiService.getMyShopPendingOrders()
-      console.log('📦 All shop orders response:', response)
+      // Use the new endpoint that gets ALL orders from the shop owner's shops
+      const response = await apiService.getAllMyShopOrders()
+      console.log('📦 ALL shop orders response:', response)
       
       setOrders(response.data || response || [])
     } catch (err) {
@@ -79,7 +78,6 @@ export default function TodosLosPedidosPage() {
       setLoading(false)
     }
   }
-
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     try {
       await apiService.updateOrderStatus(orderId, newStatus)
@@ -88,6 +86,18 @@ export default function TodosLosPedidosPage() {
     } catch (err) {
       console.error('Error updating order status:', err)
       alert('Error al actualizar el estado del pedido')
+    }
+  }
+  const handleAssignDelivery = async (orderId: string, deliveryPersonId: string) => {
+    try {
+      await apiService.assignDeliveryPerson(orderId, deliveryPersonId)
+      // Order will be updated via WebSocket
+      setIsModalOpen(false)
+      alert('Repartidor asignado exitosamente')
+    } catch (err: any) {
+      console.error('Error assigning delivery person:', err)
+      const errorMessage = err?.response?.data?.message || err?.message || 'Error al asignar el repartidor'
+      alert(`Error: ${errorMessage}`)
     }
   }
 
@@ -261,9 +271,11 @@ export default function TodosLosPedidosPage() {
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Estado
+                        </th>                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Cliente
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Cliente
+                          Repartidor
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Total
@@ -296,13 +308,30 @@ export default function TodosLosPedidosPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[order.status]}`}>
+                          <td className="px-6 py-4 whitespace-nowrap">                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[order.status]}`}>
                               {statusLabels[order.status]}
                             </span>
                           </td>                          <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900 dark:text-white">
                               {order.customerId ? order.customerId.slice(-8) : 'N/A'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {order.deliveryPersonId ? (
+                                <div className="flex items-center">
+                                  <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                                  {typeof order.deliveryPersonId === 'object' 
+                                    ? order.deliveryPersonId.name 
+                                    : 'Repartidor asignado'
+                                  }
+                                </div>
+                              ) : (
+                                <div className="flex items-center text-gray-400">
+                                  <div className="w-2 h-2 bg-gray-300 rounded-full mr-2"></div>
+                                  Sin asignar
+                                </div>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -337,8 +366,7 @@ export default function TodosLosPedidosPage() {
           </>
         )}
 
-        {/* Order Detail Modal */}
-        <OrderDetailModal
+        {/* Order Detail Modal */}        <OrderDetailModal
           order={selectedOrder}
           isOpen={isModalOpen}
           onClose={() => {
@@ -346,7 +374,9 @@ export default function TodosLosPedidosPage() {
             setSelectedOrder(null)
           }}
           onUpdateStatus={handleStatusUpdate}
+          onAssignDelivery={handleAssignDelivery}
           canUpdateStatus={true}
+          canAssignDelivery={true}
         />
       </div>
     </div>

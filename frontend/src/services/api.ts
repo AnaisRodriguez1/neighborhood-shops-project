@@ -173,9 +173,19 @@ export const apiService = {
     const { data } = await api.patch(`/orders/${orderId}/status`, { status })
     return data
   },
-
   assignDeliveryPerson: async (orderId: string, deliveryPersonId: string) => {
     const { data } = await api.patch(`/orders/${orderId}/assign-delivery`, { deliveryPersonId })
+    return data
+  },
+
+  // Delivery persons endpoints
+  getAvailableDeliveryPersons: async () => {
+    const { data } = await api.get('/auth/delivery-persons/available')
+    return data
+  },
+
+  getAllDeliveryPersons: async () => {
+    const { data } = await api.get('/auth/delivery-persons')
     return data
   },
 
@@ -187,15 +197,45 @@ export const apiService = {
 
     const { data } = await api.get(`/orders/my-orders${query}`)
     return data
-  },
-
-  getMyShopPendingOrders: async (page?: number, limit?: number) => {
+  },  getMyShopPendingOrders: async (page?: number, limit?: number) => {
     const params = new URLSearchParams()
     if (page) params.append("page", page.toString())
     if (limit) params.append("limit", limit.toString())
     const query = params.toString() ? `?${params.toString()}` : ""
 
     const { data } = await api.get(`/orders/my-shop-orders/pending${query}`)
+    return data
+  },
+
+  // NEW: Get ALL orders from shop owner's shops (all statuses)
+  getAllMyShopOrders: async (page?: number, limit?: number) => {
+    const params = new URLSearchParams()
+    if (page) params.append("page", page.toString())
+    if (limit) params.append("limit", limit.toString())
+    const query = params.toString() ? `?${params.toString()}` : ""
+
+    const { data } = await api.get(`/orders/my-shop-orders/all${query}`)
+    return data
+  },
+
+  getMyDeliveries: async (page?: number, limit?: number) => {
+    const params = new URLSearchParams()
+    if (page) params.append("page", page.toString())
+    if (limit) params.append("limit", limit.toString())
+    const query = params.toString() ? `?${params.toString()}` : ""
+
+    const { data } = await api.get(`/orders/my-deliveries${query}`)
+    return data
+  },
+
+  // NEW: Get ALL deliveries for delivery person (all statuses)
+  getAllMyDeliveries: async (page?: number, limit?: number) => {
+    const params = new URLSearchParams()
+    if (page) params.append("page", page.toString())
+    if (limit) params.append("limit", limit.toString())
+    const query = params.toString() ? `?${params.toString()}` : ""
+
+    const { data } = await api.get(`/orders/my-deliveries/all${query}`)
     return data
   },
 

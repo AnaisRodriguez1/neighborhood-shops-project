@@ -203,7 +203,6 @@ export class OrdersService {
 
     return orders;
   }
-
   async findByDeliveryPerson(deliveryPersonId: string, paginationDto: PaginationDto) {
     const { limit = 10, offset = 0 } = paginationDto;
 
@@ -222,6 +221,42 @@ export class OrdersService {
       .exec();
 
     return orders;
+  }
+
+  async findAllDeliveriesByDeliveryPerson(deliveryPersonId: string, paginationDto: PaginationDto) {
+    try {
+      console.log('🚚 Finding ALL deliveries for repartidor:', deliveryPersonId);
+      
+      const { limit = 50, offset, page } = paginationDto;
+      const calculatedOffset = offset !== undefined ? offset : (page ? (page - 1) * limit : 0);
+
+      if (!Types.ObjectId.isValid(deliveryPersonId)) {
+        throw new BadRequestException(`'${deliveryPersonId}' no es un ObjectId válido.`);
+      }
+
+      // Buscar TODOS los pedidos asignados al repartidor (todos los status)
+      const orders = await this.orderModel
+        .find({ deliveryPerson: deliveryPersonId })
+        .populate('client', 'name email')
+        .populate('shop', 'name address')
+        .populate('items.product', 'name price images')
+        .populate('deliveryPerson', 'name email deliveryInfo')
+        .skip(calculatedOffset)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .exec();
+
+      console.log('🚚 Found deliveries for repartidor:', orders.length);
+      console.log('🚚 Orders by status:', orders.reduce((acc, order) => {
+        acc[order.status] = (acc[order.status] || 0) + 1;
+        return acc;
+      }, {}));
+
+      return orders;
+    } catch (error) {
+      console.error('❌ Error finding delivery orders:', error);
+      handleExceptions(error, 'los pedidos de entrega', 'obtener');
+    }
   }
 
   async findOne(id: string) {
@@ -253,15 +288,38 @@ export class OrdersService {
 
       const order = await this.orderModel
         .findById(orderId)
-        .populate(['client', 'shop', 'deliveryPerson']);
-
-      if (!order) {
+        .populate(['client', 'shop', 'deliveryPerson']);      if (!order) {
         throw new NotFoundException('Pedido no encontrado');
       }      // Verificar permisos
       const userShop = await this.shopModel.findOne({ ownerId: user._id });
-      const isShopOwner = userShop && order.shop._id.toString() === userShop.id.toString();
+        // Debug logging
+      console.log('=== DEBUG ORDER UPDATE AUTHORIZATION ===');
+      console.log('User ID:', user._id);
+      console.log('User role:', user.role);
+      console.log('User shop found:', userShop ? {
+        id: userShop.id,
+        _id: userShop._id,
+        ownerId: userShop.ownerId
+      } : 'No shop found');
+      console.log('Order shop:', order.shop ? {
+        id: order.shop._id,
+        _id: order.shop._id
+      } : 'No shop in order');
+      console.log('Order shop type:', typeof order.shop?._id);
+      console.log('User shop type:', typeof userShop?._id);
+        // Fix: Use _id consistently and convert both to string for comparison
+      const isShopOwner = userShop && order.shop._id.toString() === (userShop as any)._id.toString();
+      console.log('Is shop owner check result:', isShopOwner);
+      console.log('Shop ID comparison:', {
+        orderShopId: order.shop?._id?.toString(),
+        userShopId: (userShop as any)?._id?.toString(),
+        equal: order.shop?._id?.toString() === (userShop as any)?._id?.toString()
+      });
+      
       const isDeliveryPerson = user.role === 'repartidor' && 
         order.deliveryPerson?._id.toString() === user._id.toString();
+      console.log('Is delivery person check result:', isDeliveryPerson);
+      console.log('========================================');
 
       if (!isShopOwner && !isDeliveryPerson && user.role !== 'presidente') {
         throw new ForbiddenException('No autorizado para actualizar este pedido');
@@ -298,17 +356,29 @@ export class OrdersService {
     } catch (error) {
       handleExceptions(error, 'el pedido', 'actualizar');
     }
-  }
-  async assignDeliveryPerson(
+  }  async assignDeliveryPerson(
     orderId: string, 
     assignDeliveryPersonDto: AssignDeliveryPersonDto,
     user: AuthUser
   ) {
     try {
+      console.log('🚚 AssignDeliveryPerson called with:', { orderId, assignDeliveryPersonDto, userRole: user.role, userName: user.name });
+      
       const { deliveryPersonId } = assignDeliveryPersonDto;
+
+      // Validar que los IDs sean ObjectIds válidos
+      if (!Types.ObjectId.isValid(orderId)) {
+        throw new BadRequestException('ID de pedido no válido');
+      }
+      
+      if (!Types.ObjectId.isValid(deliveryPersonId)) {
+        throw new BadRequestException('ID de repartidor no válido');
+      }
 
       const order = await this.orderModel.findById(orderId);
       const deliveryPerson = await this.userModel.findById(deliveryPersonId);
+
+      console.log('🔍 Found order:', order?._id, 'Found deliveryPerson:', deliveryPerson?._id);
 
       if (!order || !deliveryPerson) {
         throw new NotFoundException('Pedido o repartidor no encontrado');
@@ -317,9 +387,9 @@ export class OrdersService {
       // Verificar que es repartidor activo
       if (deliveryPerson.role !== 'repartidor' || !deliveryPerson.isActive) {
         throw new BadRequestException('Usuario no es repartidor activo');
-      }      // Verificar permisos (solo dueño de tienda o presidente)
+      }// Verificar permisos (solo dueño de tienda o presidente)
       const userShop = await this.shopModel.findOne({ ownerId: user._id });
-      const isShopOwner = userShop && order.shop.toString() === userShop.id.toString();
+      const isShopOwner = userShop && order.shop.toString() === (userShop as any)._id.toString();
 
       if (!isShopOwner && user.role !== 'presidente') {
         throw new ForbiddenException('No autorizado para asignar repartidores');
@@ -375,24 +445,35 @@ export class OrdersService {
         })));
         return [];
       }      const shopIds = userShops.map(shop => shop._id as Types.ObjectId);
-      const shopIdStrings = userShops.map(shop => (shop._id as Types.ObjectId).toString());
       console.log('🔍 Looking for orders in shops (ObjectId):', shopIds);
-      console.log('🔍 Looking for orders in shops (String):', shopIdStrings);
 
-      // ARREGLAR DATOS: Convertir shop strings a ObjectId
-      console.log('🔧 Fixing shop field data types...');
-      await this.orderModel.updateMany(
-        { shop: { $type: "string" } },
-        [{ $set: { shop: { $toObjectId: "$shop" } } }]
-      );
-      console.log('✅ Shop field data types fixed');
+      // IMPORTANTE: Verificar que los datos están correctos ANTES de buscar
+      console.log('🔧 Checking shop field data types in orders...');
+      const ordersWithStringShops = await this.orderModel.find({ shop: { $type: "string" } });
+      console.log('📦 Orders with string shop field:', ordersWithStringShops.map(order => ({
+        id: order._id,
+        shop: order.shop,
+        client: order.client
+      })));
 
-      // Buscar pedidos pendientes - usando $or para manejar ambos tipos por si acaso
+      // Solo convertir si realmente hay strings y podemos validar que son IDs válidos
+      if (ordersWithStringShops.length > 0) {
+        console.log('🔧 Converting string shop fields to ObjectId...');        for (const order of ordersWithStringShops) {
+          if (Types.ObjectId.isValid(order.shop as unknown as string)) {
+            await this.orderModel.updateOne(
+              { _id: order._id },
+              { $set: { shop: new Types.ObjectId(order.shop as unknown as string) } }
+            );
+            console.log(`✅ Converted order ${order._id} shop field from string to ObjectId`);
+          } else {
+            console.log(`⚠️ Invalid ObjectId in order ${order._id}, shop: ${order.shop}`);
+          }
+        }
+      }
+
+      // Buscar pedidos pendientes solo en las tiendas del usuario
       const query = { 
-        $or: [
-          { shop: { $in: shopIds } },
-          { shop: { $in: shopIdStrings } }
-        ],
+        shop: { $in: shopIds },
         status: { $in: ['pendiente', 'confirmado', 'preparando', 'listo'] }
       };
       console.log('🔍 Query for orders:', JSON.stringify(query, null, 2));
@@ -406,28 +487,11 @@ export class OrdersService {
         .sort({ createdAt: -1 })
         .limit(limit)
         .skip(calculatedOffset)
-        .exec();
-
-      console.log('📦 Found pending orders:', orders.length);
+        .exec();      console.log('📦 Found pending orders:', orders.length);
       
-      // Always show all orders for debugging
-      const allOrders = await this.orderModel.find({});
-      console.log('🔍 All orders in DB:', allOrders.map(order => ({
-        id: order._id,
-        shop: order.shop,
-        shopType: typeof order.shop,
-        status: order.status,
-        client: order.client
-      })));
-      
-      // Show orders specifically in our target shops
-      const ordersInOurShops = await this.orderModel.find({ 
-        $or: [
-          { shop: { $in: shopIds } },
-          { shop: { $in: shopIdStrings } }
-        ]
-      });
-      console.log('🔍 All orders in our shops (any status):', ordersInOurShops.map(order => ({
+      // Debug: Mostrar todos los pedidos para verificar la corrección
+      const allOrdersAfterFix = await this.orderModel.find({});
+      console.log('🔍 All orders after fix:', allOrdersAfterFix.map(order => ({
         id: order._id,
         shop: order.shop,
         shopType: typeof order.shop,
@@ -439,6 +503,59 @@ export class OrdersService {
     } catch (error) {
       console.error('❌ Error finding pending orders:', error);
       handleExceptions(error, 'los pedidos pendientes', 'obtener');
+    }
+  }
+
+  async findAllOrdersByShopOwner(user: AuthUser, paginationDto: PaginationDto) {
+    try {
+      console.log('🔍 Finding ALL orders for shop owner:', user._id);
+      
+      const { limit = 50, offset, page } = paginationDto;
+      const calculatedOffset = offset !== undefined ? offset : (page ? (page - 1) * limit : 0);
+
+      // Primero, encontrar las tiendas del usuario
+      const userObjectId = new Types.ObjectId(user._id.toString());
+      console.log('🔍 Searching for shops with ownerId:', userObjectId);
+      
+      const userShops = await this.shopModel.find({ ownerId: userObjectId });
+      console.log('🏪 User shops found:', userShops.length);
+      
+      if (userShops.length === 0) {
+        console.log('⚠️ No shops found for user');
+        return [];
+      }
+
+      const shopIds = userShops.map(shop => shop._id as Types.ObjectId);
+      console.log('🔍 Looking for ALL orders in shops:', shopIds);
+
+      // Buscar TODOS los pedidos (todos los status) de las tiendas del usuario
+      const query = { 
+        shop: { $in: shopIds }
+        // NO filtrar por status para obtener TODOS los pedidos
+      };
+      console.log('🔍 Query for ALL orders:', JSON.stringify(query, null, 2));
+      
+      const orders = await this.orderModel
+        .find(query)
+        .populate('client', 'name email')
+        .populate('shop', 'name address')
+        .populate('items.product', 'name price images')
+        .populate('deliveryPerson', 'name email deliveryInfo')
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(calculatedOffset)
+        .exec();
+
+      console.log('📦 Found ALL orders:', orders.length);
+      console.log('📦 Orders by status:', orders.reduce((acc, order) => {
+        acc[order.status] = (acc[order.status] || 0) + 1;
+        return acc;
+      }, {}));
+      
+      return orders;
+    } catch (error) {
+      console.error('❌ Error finding all orders:', error);
+      handleExceptions(error, 'todos los pedidos', 'obtener');
     }
   }
 
