@@ -51,8 +51,7 @@ export default function Header() {
             </button>
 
             {user ? (
-              <>
-                {/* Navigation Links */}
+              <>                {/* Navigation Links */}
                 <div className="flex items-center space-x-1">
                   <Link
                     to="/tiendas"
@@ -60,6 +59,30 @@ export default function Header() {
                   >
                     Tiendas
                   </Link>
+                  
+                  {/* Admin Links (only for presidente role) */}
+                  {user.role === "presidente" && (
+                    <>
+                      <Link
+                        to="/admin/metricas"
+                        className="px-3 py-2 text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 rounded-full font-medium"
+                      >
+                        Métricas
+                      </Link>
+                      <Link
+                        to="/admin/tiendas"
+                        className="px-3 py-2 text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 rounded-full font-medium"
+                      >
+                        Admin Tiendas
+                      </Link>
+                      <Link
+                        to="/admin/productos"
+                        className="px-3 py-2 text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 rounded-full font-medium"
+                      >
+                        Admin Productos
+                      </Link>
+                    </>
+                  )}
                 </div>
                 {/* Cart (only in comprador view) */}
                 {viewMode?.current === "comprador" && (

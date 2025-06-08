@@ -58,7 +58,6 @@ export class ShopsController {
   ) {
     return this.shopsService.update(id, updateShopDto, user);
   }
-
   @Delete(':id')
   @Auth(ValidRoles.locatario, ValidRoles.presidente)
   remove(
@@ -66,6 +65,12 @@ export class ShopsController {
     @GetUser() user: AuthUser,
   ) {
     return this.shopsService.remove(id, user);
+  }
+
+  @Delete('admin/:id')
+  @Auth(ValidRoles.presidente)
+  adminRemove(@Param('id', ParseObjectIdPipe) id: string) {
+    return this.shopsService.adminRemove(id);
   }
 
   @Delete('delete-all')

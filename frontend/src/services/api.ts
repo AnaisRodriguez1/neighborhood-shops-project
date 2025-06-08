@@ -71,6 +71,12 @@ export const apiService = {
     return data
   },
 
+  // Admin Methods for deleting
+  adminDeleteShop: async (shopId: string) => {
+    const { data } = await api.delete(`/shops/admin/${shopId}`)
+    return data
+  },
+
   // Admin Metrics
   getAdminMetrics: async () => {
     const { data } = await api.get("/shops/admin/metrics")
@@ -112,9 +118,14 @@ export const apiService = {
     const { data } = await api.patch(`/products/${id}`, productData)
     return data
   },
-
   deleteProduct: async (id: string) => {
     const { data } = await api.delete(`/products/${id}`)
+    return data
+  },
+
+  // Admin Methods for deleting products
+  adminDeleteProduct: async (productId: string) => {
+    const { data } = await api.delete(`/products/admin/${productId}`)
     return data
   },
 

@@ -69,6 +69,7 @@ export class ProductsService {
       .sort({
         name:1
       })
+      .populate('shopId', 'name _id')
       .select('-createdAt -updatedAt')
   }
   async findByShopId(shopId: string, paginationDto: PaginationDto) {
@@ -134,9 +135,32 @@ export class ProductsService {
       handleExceptions(error, 'el producto', 'actualizar');
     }
   }
-
   async remove(id: string) {
     const product = await this.findOne(id);
     await this.productModel.findByIdAndDelete(id);
+  }
+
+  async adminRemove(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException(`'${id}' no es un ObjectId válido.`);
+    }
+
+    try {
+      const product = await this.productModel.findById(id);
+      if (!product) {
+        throw new NotFoundException(`Producto con ID '${id}' no encontrado.`);
+      }
+
+      await this.productModel.findByIdAndDelete(id);
+
+      return { 
+        message: `Producto '${product.name}' eliminado permanentemente por administrador.` 
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      handleExceptions(error, 'el producto', 'eliminar');
+    }
   }
 }

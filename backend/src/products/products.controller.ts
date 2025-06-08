@@ -41,10 +41,15 @@ export class ProductsController {
     console.log('============================');
     return this.productsService.update(id, updateProductDto);
   }
-
   @Delete(':id')
   @Auth(ValidRoles.locatario, ValidRoles.presidente)
   remove(@Param('id', ParseObjectIdPipe) id: string) {
     return this.productsService.remove(id);
+  }
+
+  @Delete('admin/:id')
+  @Auth(ValidRoles.presidente)
+  adminRemove(@Param('id', ParseObjectIdPipe) id: string) {
+    return this.productsService.adminRemove(id);
   }
 }

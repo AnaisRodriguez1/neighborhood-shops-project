@@ -129,7 +129,6 @@ export class ShopsService {  constructor(
       handleExceptions(error, 'la tienda', 'actualizar');
     }
   }
-
   async remove(id: string, user: AuthUser) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException(`'${id}' no es un ObjectId válido.`);
@@ -153,6 +152,34 @@ export class ShopsService {  constructor(
     }
 
     return { message: `Tienda con ID '${id}' eliminada correctamente.` };
+  }
+
+  async adminRemove(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException(`'${id}' no es un ObjectId válido.`);
+    }
+
+    try {
+      const shop = await this.shopModel.findById(id);
+      if (!shop) {
+        throw new NotFoundException(`Tienda con ID '${id}' no encontrada.`);
+      }
+
+      // Hard delete para administrador - elimina la tienda y todos sus productos
+      await this.shopModel.findByIdAndDelete(id);
+      
+      // También eliminar todos los productos de esta tienda
+      await this.productModel.deleteMany({ shopId: id });
+
+      return { 
+        message: `Tienda '${shop.name}' y todos sus productos eliminados permanentemente por administrador.` 
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      handleExceptions(error, 'la tienda', 'eliminar');
+    }
   }
   async deleteAllShops(): Promise<{ message: string; deletedCount: number }> {
     try {

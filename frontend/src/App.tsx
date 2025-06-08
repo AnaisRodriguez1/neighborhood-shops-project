@@ -17,6 +17,8 @@ import CrearTiendaPage from "./pages/CrearTiendaPage"
 import CrearProductoPage from "./pages/CrearProductoPage"
 import CarritoPage from "./pages/CarritoPage"
 import AdminMetricsPage from "./pages/AdminMetricsPage"
+import AdminShopsPage from "./pages/AdminShopsPage"
+import AdminProductsPage from "./pages/AdminProductsPage"
 
 function App() {
   return (
@@ -78,14 +80,28 @@ function App() {
                       <CarritoPage />
                     </ProtectedRoute>
                   }
-                />
-
-                {/* Admin routes */}
+                />                {/* Admin routes */}
                 <Route
                   path="/admin/metricas"
                   element={
                     <ProtectedRoute requiredRole="presidente">
                       <AdminMetricsPage />
+                    </ProtectedRoute>
+                  }
+                />                <Route
+                  path="/admin/tiendas"
+                  element={
+                    <ProtectedRoute requiredRole="presidente">
+                      <AdminShopsPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/admin/productos"
+                  element={
+                    <ProtectedRoute requiredRole="presidente">
+                      <AdminProductsPage />
                     </ProtectedRoute>
                   }
                 />
