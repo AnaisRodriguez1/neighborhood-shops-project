@@ -74,12 +74,17 @@ export default function Header() {
                         className="px-3 py-2 text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 rounded-full font-medium"
                       >
                         Admin Tiendas
-                      </Link>
-                      <Link
+                      </Link>                      <Link
                         to="/admin/productos"
                         className="px-3 py-2 text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 rounded-full font-medium"
                       >
                         Admin Productos
+                      </Link>
+                      <Link
+                        to="/admin/usuarios"
+                        className="px-3 py-2 text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 rounded-full font-medium"
+                      >
+                        Admin Usuarios
                       </Link>
                     </>
                   )}

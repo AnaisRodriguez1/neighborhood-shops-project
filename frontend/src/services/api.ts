@@ -122,10 +122,20 @@ export const apiService = {
     const { data } = await api.delete(`/products/${id}`)
     return data
   },
-
   // Admin Methods for deleting products
   adminDeleteProduct: async (productId: string) => {
     const { data } = await api.delete(`/products/admin/${productId}`)
+    return data
+  },
+
+  // Admin Methods for users
+  getAllUsers: async (page = 1, limit = 10) => {
+    const { data } = await api.get(`/auth/admin/users?page=${page}&limit=${limit}`)
+    return data
+  },
+
+  adminDeleteUser: async (userId: string) => {
+    const { data } = await api.delete(`/auth/admin/users/${userId}`)
     return data
   },
 

@@ -4,6 +4,7 @@ import { AuthController } from './auth.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './entities/user.entity';
 import { Shop, ShopSchema } from '../shops/entities/shop.entity';
+import { Product, ProductSchema } from '../products/entities/product.entity';
 import {PassportModule} from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -22,6 +23,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       {
         name: Shop.name,
         schema: ShopSchema
+      },
+      {
+        name: Product.name,
+        schema: ProductSchema
       }
     ]),
 

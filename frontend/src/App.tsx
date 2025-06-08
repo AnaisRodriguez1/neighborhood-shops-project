@@ -19,6 +19,7 @@ import CarritoPage from "./pages/CarritoPage"
 import AdminMetricsPage from "./pages/AdminMetricsPage"
 import AdminShopsPage from "./pages/AdminShopsPage"
 import AdminProductsPage from "./pages/AdminProductsPage"
+import AdminUsersPage from "./pages/AdminUsersPage"
 
 function App() {
   return (
@@ -95,13 +96,20 @@ function App() {
                       <AdminShopsPage />
                     </ProtectedRoute>
                   }
-                />
-
-                <Route
+                />                <Route
                   path="/admin/productos"
                   element={
                     <ProtectedRoute requiredRole="presidente">
                       <AdminProductsPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/admin/usuarios"
+                  element={
+                    <ProtectedRoute requiredRole="presidente">
+                      <AdminUsersPage />
                     </ProtectedRoute>
                   }
                 />

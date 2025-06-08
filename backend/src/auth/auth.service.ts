@@ -1,21 +1,24 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { CreateUserDto,LoginUserDto } from './dto';
 import { handleExceptions } from 'src/common/helpers/exception-handler.helper';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './entities/user.entity';
 import { Shop } from '../shops/entities/shop.entity';
-import { Model } from 'mongoose';
+import { Product } from '../products/entities/product.entity';
+import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
+import { PaginationDto } from '../common/dtos/pagination.dto';
 
 @Injectable()
-export class AuthService {
-  constructor(
+export class AuthService {  constructor(
     @InjectModel(User.name)
     private readonly userModel: Model<User>,
     @InjectModel(Shop.name)
     private readonly shopModel: Model<Shop>,
+    @InjectModel(Product.name)
+    private readonly productModel: Model<Product>,
     private readonly jwtService:JwtService,
   
   ){}async create(createUserDto: CreateUserDto & { deliveryInfo?: any; shopData?: any }) {
@@ -156,7 +159,6 @@ export class AuthService {
       handleExceptions(error, 'los repartidores', 'obtener');
     }
   }
-
   async getAllDeliveryPersons() {
     try {
       const deliveryPersons = await this.userModel
@@ -170,6 +172,84 @@ export class AuthService {
       return deliveryPersons;
     } catch (error) {
       handleExceptions(error, 'los repartidores', 'obtener');
+    }
+  }
+
+  async getAllUsers(paginationDto: PaginationDto) {
+    const { limit = 10, offset, page } = paginationDto;
+    const calculatedOffset = offset !== undefined ? offset : (page ? (page - 1) * limit : 0);
+
+    try {
+      const users = await this.userModel
+        .find({ isActive: true })
+        .select('-password') // No incluir contraseñas
+        .limit(limit)
+        .skip(calculatedOffset)
+        .sort({ createdAt: -1 });
+
+      const total = await this.userModel.countDocuments({ isActive: true });
+
+      return {
+        users,
+        total,
+        page: page || 1,
+        limit,
+        hasMore: (calculatedOffset + limit) < total
+      };
+    } catch (error) {
+      handleExceptions(error, 'los usuarios', 'obtener');
+    }
+  }
+
+  async adminRemoveUser(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException(`'${id}' no es un ObjectId válido.`);
+    }
+
+    try {
+      const user = await this.userModel.findById(id);
+      if (!user) {
+        throw new NotFoundException(`Usuario con ID '${id}' no encontrado.`);
+      }
+
+      // No permitir que el admin se elimine a sí mismo
+      if (user.role === 'presidente') {
+        throw new BadRequestException('No se puede eliminar un usuario administrador.');
+      }
+
+      let deletedShopsCount = 0;
+      let deletedProductsCount = 0;
+
+      // Si es locatario, eliminar también sus tiendas y productos
+      if (user.role === 'locatario') {
+        // Buscar tiendas del usuario
+        const shops = await this.shopModel.find({ ownerId: id });
+        
+        for (const shop of shops) {
+          // Contar y eliminar productos de cada tienda
+          const productsCount = await this.productModel.countDocuments({ shopId: shop._id });
+          deletedProductsCount += productsCount;
+          await this.productModel.deleteMany({ shopId: shop._id });
+        }
+        
+        // Contar y eliminar tiendas del usuario
+        deletedShopsCount = await this.shopModel.countDocuments({ ownerId: id });
+        await this.shopModel.deleteMany({ ownerId: id });
+      }
+
+      // Eliminar el usuario
+      await this.userModel.findByIdAndDelete(id);
+
+      return { 
+        message: `Usuario '${user.name}' (${user.role}) eliminado permanentemente por administrador.`,
+        deletedShops: deletedShopsCount,
+        deletedProducts: deletedProductsCount
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      handleExceptions(error, 'el usuario', 'eliminar');
     }
   }
 }
