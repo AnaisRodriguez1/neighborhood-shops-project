@@ -7,7 +7,11 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Order } from './entities/order.entity';
-import { CreateOrderDto, UpdateOrderStatusDto, AssignDeliveryPersonDto } from './dto';
+import {
+  CreateOrderDto,
+  UpdateOrderStatusDto,
+  AssignDeliveryPersonDto,
+} from './dto';
 import { Product } from 'src/products/entities/product.entity';
 import { Shop } from 'src/shops/entities/shop.entity';
 import { User } from 'src/auth/entities/user.entity';
@@ -20,6 +24,25 @@ export interface AuthUser {
   email: string;
   name: string;
   role: string;
+}
+
+// Interface for populated order items
+interface PopulatedOrderItem {
+  product: {
+    _id: Types.ObjectId;
+    name: string;
+    price: number;
+    images?: string[];
+    description?: string;
+    stock?: number;
+  } | null;
+  quantity: number;
+  price: number;
+}
+
+// Interface for populated orders
+interface PopulatedOrder extends Omit<Order, 'items'> {
+  items: PopulatedOrderItem[];
 }
 
 @Injectable()
@@ -38,26 +61,29 @@ export class OrdersService {
 
   async create(createOrderDto: CreateOrderDto, user: AuthUser) {
     try {
-      const { shopId, items, deliveryAddress, notes, paymentMethod } = createOrderDto;
+      const { shopId, items, deliveryAddress, notes, paymentMethod } =
+        createOrderDto;
       const clientId = user._id;
 
       // Verificar que la tienda existe
       const shop = await this.shopModel.findById(shopId);
       if (!shop) {
         throw new NotFoundException('Tienda no encontrada');
-      }      // Calcular total y verificar productos
+      } // Calcular total y verificar productos
       let totalAmount = 0;
       const orderItems: any[] = [];
 
       for (const item of items) {
         const product = await this.productModel.findById(item.productId);
         if (!product) {
-          throw new NotFoundException(`Producto ${item.productId} no encontrado`);
+          throw new NotFoundException(
+            `Producto ${item.productId} no encontrado`,
+          );
         }
 
         if (product.stock < item.quantity) {
           throw new BadRequestException(
-            `Stock insuficiente para ${product.name}. Stock disponible: ${product.stock}`
+            `Stock insuficiente para ${product.name}. Stock disponible: ${product.stock}`,
           );
         }
 
@@ -67,47 +93,47 @@ export class OrdersService {
         orderItems.push({
           product: product._id,
           quantity: item.quantity,
-          price: product.price
+          price: product.price,
         });
 
         // Actualizar stock
         product.stock -= item.quantity;
         await product.save();
-      }      // Crear pedido
+      } // Crear pedido
       const order = new this.orderModel({
         client: clientId,
         shop: shopId,
         items: orderItems,
         deliveryAddress: {
           ...deliveryAddress,
-          coordinates: deliveryAddress.lat && deliveryAddress.lng 
-            ? { lat: deliveryAddress.lat, lng: deliveryAddress.lng }
-            : undefined
+          coordinates:
+            deliveryAddress.lat && deliveryAddress.lng
+              ? { lat: deliveryAddress.lat, lng: deliveryAddress.lng }
+              : undefined,
         },
         totalAmount,
         notes,
         paymentMethod: paymentMethod || 'efectivo',
-        status: 'pendiente'
+        status: 'pendiente',
       });
 
       await order.save();
-      await order.populate(['client', 'shop', 'items.product']);      // Notificar a la tienda vía WebSocket
+      await order.populate(['client', 'shop', 'items.product']); // Notificar a la tienda vía WebSocket
       this.ordersGateway.emitToRoom(`shop-${shopId}`, 'new-order', {
         order,
-        message: 'Nuevo pedido recibido'
+        message: 'Nuevo pedido recibido',
       });
 
       // Notificar al cliente
       this.ordersGateway.emitToRoom(`client-${clientId}`, 'order-created', {
         order,
-        message: 'Pedido creado exitosamente'
+        message: 'Pedido creado exitosamente',
       });
 
       return {
         message: 'Pedido creado exitosamente',
-        order
+        order,
       };
-
     } catch (error) {
       handleExceptions(error, 'el pedido', 'crear');
     }
@@ -115,69 +141,82 @@ export class OrdersService {
 
   async findAll(paginationDto: PaginationDto) {
     const { limit = 10, offset = 0 } = paginationDto;
-
     const orders = await this.orderModel
       .find()
       .populate('client', 'name email')
       .populate('shop', 'name address')
       .populate('deliveryPerson', 'name email')
-      .populate('items.product', 'name price')
+      .populate({
+        path: 'items.product',
+        select: 'name price images description stock',
+        match: { _id: { $exists: true } },
+      })
       .skip(offset)
       .limit(limit)
       .sort({ createdAt: -1 })
       .exec();
 
-    return orders;
-  }  async findByClient(clientId: string, paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto;
+    // Filtrar items con productos null/undefined después del populate
+    const cleanedOrders = orders.map((order) => {
+      const validItems = order.items.filter(
+        (item) => item.product && item.product !== null,
+      );
+      return {
+        ...order.toObject(),
+        items: validItems,
+      };
+    });
 
-    if (!Types.ObjectId.isValid(clientId)) {
+    return cleanedOrders;
+  }
+  async findByClient(clientId: string, paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0 } = paginationDto;    if (!Types.ObjectId.isValid(clientId)) {
       throw new BadRequestException(`'${clientId}' no es un ObjectId válido.`);
     }
-
-    console.log('🔍 Finding orders for client:', clientId);
 
     // Fix any client fields that are stored as strings instead of ObjectId
     try {
       const clientObjectId = new Types.ObjectId(clientId);
-      
+
       // First, fix any orders where client is stored as string
       const updateResult = await this.orderModel.updateMany(
         { client: clientId }, // Find orders where client is a string
-        { $set: { client: clientObjectId } } // Convert to ObjectId
-      );
-      
-      if (updateResult.modifiedCount > 0) {
-        console.log(`🔧 Fixed ${updateResult.modifiedCount} orders with string client field`);
+        { $set: { client: clientObjectId } }, // Convert to ObjectId
+      );      if (updateResult.modifiedCount > 0) {
+        // Fixed some orders with string client field
       }
-      
-      // Debug: Show all orders with their client field types
-      const allOrders = await this.orderModel.find({});
-      console.log('🔍 All orders client field debug:', allOrders.map(order => ({
-        id: order._id,
-        client: order.client,
-        clientType: typeof order.client
-      })));
 
       // Use both string and ObjectId queries to ensure we find all orders
       const orders = await this.orderModel
         .find({
           $or: [
             { client: clientObjectId },
-            { client: clientId } // Also search for string version just in case
-          ]
+            { client: clientId }, // Also search for string version just in case
+          ],
         })
         .populate('shop', 'name address')
         .populate('deliveryPerson', 'name email')
-        .populate('items.product', 'name price')
+        .populate({
+          path: 'items.product',
+          select: 'name price images description stock',
+          match: { _id: { $exists: true } },
+        })
         .skip(offset)
         .limit(limit)
         .sort({ createdAt: -1 })
         .exec();
 
-      console.log(`📦 Found ${orders.length} orders for client ${clientId}`);
-      return orders;
-      
+      // Filtrar items con productos null/undefined después del populate
+      const cleanedOrders = orders.map((order) => {
+        const validItems = order.items.filter(
+          (item) => item.product && item.product !== null,
+        );
+        return {
+          ...order.toObject(),
+          items: validItems,        };
+      });
+
+      return cleanedOrders;
     } catch (error) {
       console.error('❌ Error finding client orders:', error);
       throw error;
@@ -190,48 +229,84 @@ export class OrdersService {
     if (!Types.ObjectId.isValid(shopId)) {
       throw new BadRequestException(`'${shopId}' no es un ObjectId válido.`);
     }
-
     const orders = await this.orderModel
       .find({ shop: shopId })
       .populate('client', 'name email')
       .populate('deliveryPerson', 'name email')
-      .populate('items.product', 'name price')
+      .populate({
+        path: 'items.product',
+        select: 'name price images description stock',
+        match: { _id: { $exists: true } },
+      })
       .skip(offset)
       .limit(limit)
       .sort({ createdAt: -1 })
       .exec();
 
-    return orders;
+    // Filtrar items con productos null/undefined después del populate
+    const cleanedOrders = orders.map((order) => {
+      const validItems = order.items.filter(
+        (item) => item.product && item.product !== null,
+      );
+      return {
+        ...order.toObject(),
+        items: validItems,
+      };
+    });
+
+    return cleanedOrders;
   }
-  async findByDeliveryPerson(deliveryPersonId: string, paginationDto: PaginationDto) {
+  async findByDeliveryPerson(
+    deliveryPersonId: string,
+    paginationDto: PaginationDto,
+  ) {
     const { limit = 10, offset = 0 } = paginationDto;
 
     if (!Types.ObjectId.isValid(deliveryPersonId)) {
-      throw new BadRequestException(`'${deliveryPersonId}' no es un ObjectId válido.`);
+      throw new BadRequestException(
+        `'${deliveryPersonId}' no es un ObjectId válido.`,
+      );
     }
-
     const orders = await this.orderModel
       .find({ deliveryPerson: deliveryPersonId })
       .populate('client', 'name email')
       .populate('shop', 'name address')
-      .populate('items.product', 'name price')
+      .populate({
+        path: 'items.product',
+        select: 'name price images description stock',
+        match: { _id: { $exists: true } },
+      })
       .skip(offset)
       .limit(limit)
       .sort({ createdAt: -1 })
       .exec();
 
-    return orders;
-  }
+    // Filtrar items con productos null/undefined después del populate
+    const cleanedOrders = orders.map((order) => {
+      const validItems = order.items.filter(
+        (item) => item.product && item.product !== null,
+      );
+      return {
+        ...order.toObject(),
+        items: validItems,
+      };
+    });
 
-  async findAllDeliveriesByDeliveryPerson(deliveryPersonId: string, paginationDto: PaginationDto) {
+    return cleanedOrders;
+  }
+  async findAllDeliveriesByDeliveryPerson(
+    deliveryPersonId: string,
+    paginationDto: PaginationDto,
+  ) {
     try {
-      console.log('🚚 Finding ALL deliveries for repartidor:', deliveryPersonId);
-      
       const { limit = 50, offset, page } = paginationDto;
-      const calculatedOffset = offset !== undefined ? offset : (page ? (page - 1) * limit : 0);
+      const calculatedOffset =
+        offset !== undefined ? offset : page ? (page - 1) * limit : 0;
 
       if (!Types.ObjectId.isValid(deliveryPersonId)) {
-        throw new BadRequestException(`'${deliveryPersonId}' no es un ObjectId válido.`);
+        throw new BadRequestException(
+          `'${deliveryPersonId}' no es un ObjectId válido.`,
+        );
       }
 
       // Buscar TODOS los pedidos asignados al repartidor (todos los status)
@@ -239,20 +314,28 @@ export class OrdersService {
         .find({ deliveryPerson: deliveryPersonId })
         .populate('client', 'name email')
         .populate('shop', 'name address')
-        .populate('items.product', 'name price images')
+        .populate({
+          path: 'items.product',
+          select: 'name price images description stock',
+          match: { _id: { $exists: true } },
+        })
         .populate('deliveryPerson', 'name email deliveryInfo')
         .skip(calculatedOffset)
         .limit(limit)
         .sort({ createdAt: -1 })
         .exec();
 
-      console.log('🚚 Found deliveries for repartidor:', orders.length);
-      console.log('🚚 Orders by status:', orders.reduce((acc, order) => {
-        acc[order.status] = (acc[order.status] || 0) + 1;
-        return acc;
-      }, {}));
+      // Filtrar items con productos null/undefined después del populate
+      const cleanedOrders = orders.map((order) => {
+        const validItems = order.items.filter(
+          (item) => item.product && item.product !== null,
+        );
+        return {
+          ...order.toObject(),
+          items: validItems,
+        };      });
 
-      return orders;
+      return cleanedOrders;
     } catch (error) {
       console.error('❌ Error finding delivery orders:', error);
       handleExceptions(error, 'los pedidos de entrega', 'obtener');
@@ -263,66 +346,95 @@ export class OrdersService {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException(`'${id}' no es un ObjectId válido.`);
     }
-
     const order = await this.orderModel
       .findById(id)
       .populate('client', 'name email')
       .populate('shop', 'name address')
       .populate('deliveryPerson', 'name email')
-      .populate('items.product', 'name price')
+      .populate({
+        path: 'items.product',
+        select: 'name price images description stock',
+        match: { _id: { $exists: true } },
+      })
       .exec();
 
     if (!order) {
       throw new NotFoundException(`No se encontró un pedido con ID '${id}'.`);
     }
 
-    return order;
+    // Filtrar items con productos null/undefined después del populate
+    const validItems = order.items.filter(
+      (item) => item.product && item.product !== null,
+    );
+    const cleanedOrder = {
+      ...order.toObject(),
+      items: validItems,
+    };
+
+    return cleanedOrder;
   }
   async updateStatus(
-    orderId: string, 
-    updateOrderStatusDto: UpdateOrderStatusDto, 
-    user: AuthUser
+    orderId: string,
+    updateOrderStatusDto: UpdateOrderStatusDto,
+    user: AuthUser,
   ) {
     try {
       const { status, estimatedDeliveryTime } = updateOrderStatusDto;
 
       const order = await this.orderModel
         .findById(orderId)
-        .populate(['client', 'shop', 'deliveryPerson']);      if (!order) {
+        .populate(['client', 'shop', 'deliveryPerson']);
+      if (!order) {
         throw new NotFoundException('Pedido no encontrado');
-      }      // Verificar permisos
+      } // Verificar permisos
       const userShop = await this.shopModel.findOne({ ownerId: user._id });
-        // Debug logging
+      // Debug logging
       console.log('=== DEBUG ORDER UPDATE AUTHORIZATION ===');
       console.log('User ID:', user._id);
       console.log('User role:', user.role);
-      console.log('User shop found:', userShop ? {
-        id: userShop.id,
-        _id: userShop._id,
-        ownerId: userShop.ownerId
-      } : 'No shop found');
-      console.log('Order shop:', order.shop ? {
-        id: order.shop._id,
-        _id: order.shop._id
-      } : 'No shop in order');
+      console.log(
+        'User shop found:',
+        userShop
+          ? {
+              id: userShop.id,
+              _id: userShop._id,
+              ownerId: userShop.ownerId,
+            }
+          : 'No shop found',
+      );
+      console.log(
+        'Order shop:',
+        order.shop
+          ? {
+              id: order.shop._id,
+              _id: order.shop._id,
+            }
+          : 'No shop in order',
+      );
       console.log('Order shop type:', typeof order.shop?._id);
       console.log('User shop type:', typeof userShop?._id);
-        // Fix: Use _id consistently and convert both to string for comparison
-      const isShopOwner = userShop && order.shop._id.toString() === (userShop as any)._id.toString();
+      // Fix: Use _id consistently and convert both to string for comparison
+      const isShopOwner =
+        userShop &&
+        order.shop._id.toString() === (userShop as any)._id.toString();
       console.log('Is shop owner check result:', isShopOwner);
       console.log('Shop ID comparison:', {
         orderShopId: order.shop?._id?.toString(),
         userShopId: (userShop as any)?._id?.toString(),
-        equal: order.shop?._id?.toString() === (userShop as any)?._id?.toString()
+        equal:
+          order.shop?._id?.toString() === (userShop as any)?._id?.toString(),
       });
-      
-      const isDeliveryPerson = user.role === 'repartidor' && 
+
+      const isDeliveryPerson =
+        user.role === 'repartidor' &&
         order.deliveryPerson?._id.toString() === user._id.toString();
       console.log('Is delivery person check result:', isDeliveryPerson);
       console.log('========================================');
 
       if (!isShopOwner && !isDeliveryPerson && user.role !== 'presidente') {
-        throw new ForbiddenException('No autorizado para actualizar este pedido');
+        throw new ForbiddenException(
+          'No autorizado para actualizar este pedido',
+        );
       }
 
       order.status = status;
@@ -334,51 +446,52 @@ export class OrdersService {
         order.actualDeliveryTime = new Date();
       }
 
-      await order.save();      // Notificar cambios vía WebSocket
-      this.ordersGateway.emitToRoom(`client-${order.client._id}`, 'order-status-updated', {
-        orderId: order._id,
-        status,
-        message: `Tu pedido está ${this.getStatusMessage(status)}`
-      });
+      await order.save(); // Notificar cambios vía WebSocket
+      this.ordersGateway.emitToRoom(
+        `client-${order.client._id}`,
+        'order-status-updated',
+        {
+          orderId: order._id,
+          status,
+          message: `Tu pedido está ${this.getStatusMessage(status)}`,
+        },
+      );
 
       if (order.deliveryPerson) {
-        this.ordersGateway.emitToRoom(`delivery-${order.deliveryPerson._id}`, 'order-status-updated', {
-          orderId: order._id,
-          status
-        });
+        this.ordersGateway.emitToRoom(
+          `delivery-${order.deliveryPerson._id}`,
+          'order-status-updated',
+          {
+            orderId: order._id,
+            status,
+          },
+        );
       }
 
       return {
         message: 'Estado actualizado exitosamente',
-        order
+        order,
       };
-
     } catch (error) {
       handleExceptions(error, 'el pedido', 'actualizar');
     }
-  }  async assignDeliveryPerson(
-    orderId: string, 
+  }
+  async assignDeliveryPerson(
+    orderId: string,
     assignDeliveryPersonDto: AssignDeliveryPersonDto,
-    user: AuthUser
-  ) {
-    try {
-      console.log('🚚 AssignDeliveryPerson called with:', { orderId, assignDeliveryPersonDto, userRole: user.role, userName: user.name });
-      
+    user: AuthUser,
+  ) {    try {
       const { deliveryPersonId } = assignDeliveryPersonDto;
 
       // Validar que los IDs sean ObjectIds válidos
       if (!Types.ObjectId.isValid(orderId)) {
         throw new BadRequestException('ID de pedido no válido');
       }
-      
+
       if (!Types.ObjectId.isValid(deliveryPersonId)) {
         throw new BadRequestException('ID de repartidor no válido');
-      }
-
-      const order = await this.orderModel.findById(orderId);
+      }      const order = await this.orderModel.findById(orderId);
       const deliveryPerson = await this.userModel.findById(deliveryPersonId);
-
-      console.log('🔍 Found order:', order?._id, 'Found deliveryPerson:', deliveryPerson?._id);
 
       if (!order || !deliveryPerson) {
         throw new NotFoundException('Pedido o repartidor no encontrado');
@@ -387,9 +500,10 @@ export class OrdersService {
       // Verificar que es repartidor activo
       if (deliveryPerson.role !== 'repartidor' || !deliveryPerson.isActive) {
         throw new BadRequestException('Usuario no es repartidor activo');
-      }// Verificar permisos (solo dueño de tienda o presidente)
+      } // Verificar permisos (solo dueño de tienda o presidente)
       const userShop = await this.shopModel.findOne({ ownerId: user._id });
-      const isShopOwner = userShop && order.shop.toString() === (userShop as any)._id.toString();
+      const isShopOwner =
+        userShop && order.shop.toString() === (userShop as any)._id.toString();
 
       if (!isShopOwner && user.role !== 'presidente') {
         throw new ForbiddenException('No autorizado para asignar repartidores');
@@ -397,162 +511,133 @@ export class OrdersService {
 
       order.deliveryPerson = new Types.ObjectId(deliveryPersonId);
       order.status = 'en_entrega';
-      await order.save();      // Notificar al repartidor
-      this.ordersGateway.emitToRoom(`delivery-${deliveryPersonId}`, 'order-assigned', {
-        order,
-        message: 'Nuevo pedido asignado'
-      });
+      await order.save(); // Notificar al repartidor
+      this.ordersGateway.emitToRoom(
+        `delivery-${deliveryPersonId}`,
+        'order-assigned',
+        {
+          order,
+          message: 'Nuevo pedido asignado',
+        },
+      );
 
       // Notificar al cliente
-      this.ordersGateway.emitToRoom(`client-${order.client}`, 'order-status-updated', {
-        orderId: order._id,
-        status: 'en_entrega',
-        deliveryPerson: deliveryPerson.name,
-        message: 'Tu pedido está en camino'
-      });
+      this.ordersGateway.emitToRoom(
+        `client-${order.client}`,
+        'order-status-updated',
+        {
+          orderId: order._id,
+          status: 'en_entrega',
+          deliveryPerson: deliveryPerson.name,
+          message: 'Tu pedido está en camino',
+        },
+      );
 
       return { message: 'Repartidor asignado exitosamente' };
-
     } catch (error) {
       handleExceptions(error, 'el pedido', 'asignar repartidor');
     }
-  }  async findPendingOrdersByShopOwner(user: AuthUser, paginationDto: PaginationDto) {
+  }  async findPendingOrdersByShopOwner(
+    user: AuthUser,
+    paginationDto: PaginationDto,
+  ) {
     try {
-      console.log('🔍 Finding pending orders for shop owner:', user._id);
-      console.log('🔍 User ID type:', typeof user._id, 'Value:', user._id);
-      
       const { limit = 10, offset, page } = paginationDto;
-      const calculatedOffset = offset !== undefined ? offset : (page ? (page - 1) * limit : 0);
+      const calculatedOffset =
+        offset !== undefined ? offset : page ? (page - 1) * limit : 0;
 
-      // Primero, encontrar las tiendas del usuario
+      // Encontrar las tiendas del usuario
       const userObjectId = new Types.ObjectId(user._id.toString());
-      console.log('🔍 Searching for shops with ownerId:', userObjectId);
-      
       const userShops = await this.shopModel.find({ ownerId: userObjectId });
-      console.log('🏪 User shops found:', userShops.length);
-      
-      if (userShops.length > 0) {
-        console.log('🏪 Shop IDs found:', userShops.map(shop => ({ id: shop._id, name: shop.name })));
-      }
-      
+
       if (userShops.length === 0) {
-        // Verificar si existen tiendas con este usuario
-        const allShops = await this.shopModel.find({});
-        console.log('🔍 All shops in DB:', allShops.map(shop => ({ 
-          id: shop._id, 
-          name: shop.name, 
-          ownerId: shop.ownerId 
-        })));
         return [];
-      }      const shopIds = userShops.map(shop => shop._id as Types.ObjectId);
-      console.log('🔍 Looking for orders in shops (ObjectId):', shopIds);
-
-      // IMPORTANTE: Verificar que los datos están correctos ANTES de buscar
-      console.log('🔧 Checking shop field data types in orders...');
-      const ordersWithStringShops = await this.orderModel.find({ shop: { $type: "string" } });
-      console.log('📦 Orders with string shop field:', ordersWithStringShops.map(order => ({
-        id: order._id,
-        shop: order.shop,
-        client: order.client
-      })));
-
-      // Solo convertir si realmente hay strings y podemos validar que son IDs válidos
-      if (ordersWithStringShops.length > 0) {
-        console.log('🔧 Converting string shop fields to ObjectId...');        for (const order of ordersWithStringShops) {
-          if (Types.ObjectId.isValid(order.shop as unknown as string)) {
-            await this.orderModel.updateOne(
-              { _id: order._id },
-              { $set: { shop: new Types.ObjectId(order.shop as unknown as string) } }
-            );
-            console.log(`✅ Converted order ${order._id} shop field from string to ObjectId`);
-          } else {
-            console.log(`⚠️ Invalid ObjectId in order ${order._id}, shop: ${order.shop}`);
-          }
-        }
       }
+
+      const shopIds = userShops.map((shop) => shop._id as Types.ObjectId);
 
       // Buscar pedidos pendientes solo en las tiendas del usuario
-      const query = { 
+      const query = {
         shop: { $in: shopIds },
-        status: { $in: ['pendiente', 'confirmado', 'preparando', 'listo'] }
+        status: { $in: ['pendiente', 'confirmado', 'preparando', 'listo'] },
       };
-      console.log('🔍 Query for orders:', JSON.stringify(query, null, 2));
-      
+
       const orders = await this.orderModel
         .find(query)
         .populate('client', 'name email')
         .populate('shop', 'name address')
-        .populate('items.product', 'name price images')
+        .populate({
+          path: 'items.product',
+          select: 'name price images description stock',
+          match: { _id: { $exists: true } },
+        })
         .populate('deliveryPerson', 'name email')
         .sort({ createdAt: -1 })
         .limit(limit)
         .skip(calculatedOffset)
-        .exec();      console.log('📦 Found pending orders:', orders.length);
-      
-      // Debug: Mostrar todos los pedidos para verificar la corrección
-      const allOrdersAfterFix = await this.orderModel.find({});
-      console.log('🔍 All orders after fix:', allOrdersAfterFix.map(order => ({
-        id: order._id,
-        shop: order.shop,
-        shopType: typeof order.shop,
-        status: order.status,
-        client: order.client
-      })));
-      
-      return orders;
+        .exec();
+
+      // Filtrar items con productos null/undefined después del populate
+      const cleanedOrders = orders.map((order) => {
+        const validItems = order.items.filter(
+          (item) => item.product && item.product !== null,
+        );
+        return {
+          ...order.toObject(),
+          items: validItems,
+        };
+      });
+
+      return cleanedOrders;
     } catch (error) {
       console.error('❌ Error finding pending orders:', error);
       handleExceptions(error, 'los pedidos pendientes', 'obtener');
     }
   }
-
   async findAllOrdersByShopOwner(user: AuthUser, paginationDto: PaginationDto) {
     try {
-      console.log('🔍 Finding ALL orders for shop owner:', user._id);
-      
       const { limit = 50, offset, page } = paginationDto;
-      const calculatedOffset = offset !== undefined ? offset : (page ? (page - 1) * limit : 0);
+      const calculatedOffset =
+        offset !== undefined ? offset : page ? (page - 1) * limit : 0;
 
-      // Primero, encontrar las tiendas del usuario
+      // Encontrar las tiendas del usuario
       const userObjectId = new Types.ObjectId(user._id.toString());
-      console.log('🔍 Searching for shops with ownerId:', userObjectId);
-      
       const userShops = await this.shopModel.find({ ownerId: userObjectId });
-      console.log('🏪 User shops found:', userShops.length);
-      
+
       if (userShops.length === 0) {
-        console.log('⚠️ No shops found for user');
         return [];
       }
 
-      const shopIds = userShops.map(shop => shop._id as Types.ObjectId);
-      console.log('🔍 Looking for ALL orders in shops:', shopIds);
+      const shopIds = userShops.map((shop) => shop._id as Types.ObjectId);
 
       // Buscar TODOS los pedidos (todos los status) de las tiendas del usuario
-      const query = { 
-        shop: { $in: shopIds }
-        // NO filtrar por status para obtener TODOS los pedidos
+      const query = {
+        shop: { $in: shopIds },
       };
-      console.log('🔍 Query for ALL orders:', JSON.stringify(query, null, 2));
-      
+
       const orders = await this.orderModel
         .find(query)
         .populate('client', 'name email')
         .populate('shop', 'name address')
-        .populate('items.product', 'name price images')
+        .populate('items.product', 'name price images description stock')
         .populate('deliveryPerson', 'name email deliveryInfo')
         .sort({ createdAt: -1 })
         .limit(limit)
         .skip(calculatedOffset)
         .exec();
 
-      console.log('📦 Found ALL orders:', orders.length);
-      console.log('📦 Orders by status:', orders.reduce((acc, order) => {
-        acc[order.status] = (acc[order.status] || 0) + 1;
-        return acc;
-      }, {}));
-      
-      return orders;
+      // Filtrar items con productos null/undefined después del populate
+      const cleanedOrders = orders.map((order) => {
+        const validItems = order.items.filter(
+          (item: any) => item.product && item.product !== null,
+        );
+        return {
+          ...order.toObject(),
+          items: validItems,
+        };
+      });
+
+      return cleanedOrders;
     } catch (error) {
       console.error('❌ Error finding all orders:', error);
       handleExceptions(error, 'todos los pedidos', 'obtener');
@@ -561,14 +646,100 @@ export class OrdersService {
 
   private getStatusMessage(status: string): string {
     const messages = {
-      'pendiente': 'pendiente de confirmación',
-      'confirmado': 'confirmado',
-      'preparando': 'en preparación',
-      'listo': 'listo para entrega',
-      'en_entrega': 'en camino',
-      'entregado': 'entregado',
-      'cancelado': 'cancelado'
+      pendiente: 'pendiente de confirmación',
+      confirmado: 'confirmado',
+      preparando: 'en preparación',
+      listo: 'listo para entrega',
+      en_entrega: 'en camino',
+      entregado: 'entregado',
+      cancelado: 'cancelado',
     };
     return messages[status] || status;
+  }  // Nuevo método para limpiar y validar referencias de productos
+  async fixProductReferencesInOrders() {
+    try {
+      // Buscar todos los pedidos
+      const allOrders = await this.orderModel.find({});
+
+      let fixedOrders = 0;
+      let removedItems = 0;
+
+      for (const order of allOrders) {
+        let orderNeedsUpdate = false;
+        const validItems: any[] = [];
+
+        for (const item of order.items) {
+          // Verificar si el producto existe
+          const productExists = await this.productModel.findById(item.product);
+
+          if (productExists) {
+            validItems.push(item);
+          } else {
+            removedItems++;
+            orderNeedsUpdate = true;
+          }
+        }
+
+        if (orderNeedsUpdate) {
+          if (validItems.length > 0) {
+            // Actualizar el pedido con solo los items válidos
+            await this.orderModel.updateOne(
+              { _id: order._id },
+              { $set: { items: validItems } },
+            );
+            fixedOrders++;
+          } else {
+            // Si no quedan items válidos, marcar el pedido como cancelado
+            await this.orderModel.updateOne(
+              { _id: order._id },
+              { $set: { status: 'cancelado', items: [] } },
+            );
+            fixedOrders++;
+          }
+        }
+      }
+
+      return { fixedOrders, removedItems };
+    } catch (error) {
+      console.error('❌ Error durante la limpieza de referencias:', error);
+      throw error;
+    }
+  }
+
+  // Método mejorado para obtener pedidos con productos validados
+  private async getOrdersWithValidatedProducts(query: any, options: any = {}) {
+    const { populate = [], ...otherOptions } = options;
+
+    // Populate estándar para productos con validación
+    const standardPopulate = [
+      'client',
+      'shop',
+      'deliveryPerson',
+      {
+        path: 'items.product',
+        select: 'name price images description stock',
+        // Solo incluir productos que realmente existen
+        match: { _id: { $exists: true } },
+      },
+    ];
+
+    const orders = await this.orderModel
+      .find(query)
+      .populate(standardPopulate)
+      .populate(populate)
+      .exec();
+
+    // Filtrar items con productos null/undefined después del populate
+    const cleanedOrders = orders.map((order) => {
+      const validItems = order.items.filter(
+        (item) => item.product && item.product !== null,
+      );
+      return {
+        ...order.toObject(),
+        items: validItems,
+      };
+    });
+
+    return cleanedOrders;
   }
 }

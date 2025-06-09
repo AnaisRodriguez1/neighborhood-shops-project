@@ -296,10 +296,7 @@ export class ShopsService {  constructor(
     } catch (error) {
       handleExceptions(error, 'las métricas del administrador', 'obtener');
     }
-  }
-  async findByOwner(ownerId: string) {
-    console.log('🔍 findByOwner called with ownerId:', ownerId);
-    
+  }  async findByOwner(ownerId: string) {
     if (!Types.ObjectId.isValid(ownerId)) {
       throw new BadRequestException(`'${ownerId}' no es un ObjectId válido.`);
     }
@@ -307,19 +304,13 @@ export class ShopsService {  constructor(
     try {
       // Convert string to ObjectId for proper MongoDB query
       const ownerObjectId = new Types.ObjectId(ownerId);
-      console.log('🔍 Converting ownerId to ObjectId:', ownerObjectId);
-      
       const query = { ownerId: ownerObjectId, isActive: true };
-      console.log('🔍 Query for shops:', query);
-      
+
       const shops = await this.shopModel
-        .find(query)
-        .sort({ name: 1 })
+        .find(query)        .sort({ name: 1 })
         .populate('ownerId', 'name email')
         .exec();
         
-      console.log('🔍 Found shops:', shops.length, shops);
-      
       return shops;
     } catch (error) {
       console.error('❌ Error in findByOwner:', error);

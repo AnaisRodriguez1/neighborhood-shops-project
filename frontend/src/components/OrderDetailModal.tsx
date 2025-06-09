@@ -255,12 +255,11 @@ export default function OrderDetailModal({
                   <Package className="w-5 h-5 mr-2" />
                   Productos ({order.items.length})
                 </h4>
-                <div className="space-y-3">
-                  {order.items.map((item, index) => (
+                <div className="space-y-3">                  {order.items.map((item, index) => (
                     <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600 last:border-b-0">
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">
-                          {item.productName || `Producto ${item.productId}`}
+                          {(item as any).product?.name || item.productName || `Producto ${item.productId}`}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           Cantidad: {item.quantity} × {formatCurrency(item.price)}
@@ -314,15 +313,21 @@ export default function OrderDetailModal({
             </div>
 
             {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Customer Info */}
+            <div className="space-y-6">              {/* Customer Info */}
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center">
                   <User className="w-5 h-5 mr-2" />
                   Cliente
                 </h4>
                 <div className="text-gray-600 dark:text-gray-300">
-                  <p>ID: {order.customerId}</p>
+                  {order.client ? (
+                    <>
+                      <p className="font-medium">{order.client.name}</p>
+                      <p className="text-sm">{order.client.email}</p>
+                    </>
+                  ) : (
+                    <p>ID: {order.customerId}</p>
+                  )}
                 </div>
               </div>
 

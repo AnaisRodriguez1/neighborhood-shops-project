@@ -255,16 +255,14 @@ export default function RepartidorPage() {
                           )}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Customer Info */}
+                    </div>                    {/* Customer Info */}
                     <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-4">
                       <div className="flex items-start space-x-3">
                         <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
                         <div>
                           <p className="font-medium text-gray-900 dark:text-white">Cliente:</p>
                           <p className="text-gray-600 dark:text-gray-300">
-                            ID: {order.customerId?.slice(-8)}
+                            {order.client ? order.client.name : `ID: ${order.customerId?.slice(-8)}`}
                           </p>
                         </div>
                       </div>
@@ -274,15 +272,14 @@ export default function RepartidorPage() {
                     <div className="mb-4">
                       <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                         Productos ({order.items.length}):
-                      </p>
-                      <div className="flex -space-x-2 overflow-hidden">
+                      </p>                      <div className="flex -space-x-2 overflow-hidden">
                         {order.items.slice(0, 3).map((item, index) => (
-                          <div key={index} className="inline-block h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 ring-2 ring-white dark:ring-gray-800 flex items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                          <div key={index} className="flex h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 ring-2 ring-white dark:ring-gray-800 items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
                             {item.quantity}
                           </div>
                         ))}
                         {order.items.length > 3 && (
-                          <div className="inline-block h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 ring-2 ring-white dark:ring-gray-800 flex items-center justify-center text-xs font-semibold text-gray-600 dark:text-gray-300">
+                          <div className="flex h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 ring-2 ring-white dark:ring-gray-800 items-center justify-center text-xs font-semibold text-gray-600 dark:text-gray-300">
                             +{order.items.length - 3}
                           </div>
                         )}
@@ -366,10 +363,9 @@ export default function RepartidorPage() {
                               {order.items.length} producto{order.items.length !== 1 ? 's' : ''}
                             </div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        </td>                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 dark:text-white">
-                            {order.customerId?.slice(-8)}
+                            {order.client?.name || `Cliente ${order.customerId?.slice(-8)}`}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

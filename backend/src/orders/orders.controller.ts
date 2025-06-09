@@ -65,33 +65,27 @@ export class OrdersController {
   ) {
     return this.ordersService.findByDeliveryPerson(user._id.toString(), paginationDto);
   }
-
   @Get('my-deliveries/all')
   @Auth(ValidRoles.repartidor)
   findAllMyDeliveries(
     @GetUser() user: AuthUser,
     @Query() paginationDto: PaginationDto,
   ) {
-    console.log('🚚 Request for ALL delivery orders from repartidor:', user.name);
     return this.ordersService.findAllDeliveriesByDeliveryPerson(user._id.toString(), paginationDto);
-  }
-  @Get('my-shop-orders/pending')
+  }  @Get('my-shop-orders/pending')
   @Auth(ValidRoles.locatario, ValidRoles.presidente)
   findMyShopPendingOrders(
     @GetUser() user: AuthUser,
     @Query() paginationDto: PaginationDto,
   ) {
-    console.log('🏪 Request for pending shop orders from user:', user.name);
     return this.ordersService.findPendingOrdersByShopOwner(user, paginationDto);
   }
-
   @Get('my-shop-orders/all')
   @Auth(ValidRoles.locatario, ValidRoles.presidente)
   findAllMyShopOrders(
     @GetUser() user: AuthUser,
     @Query() paginationDto: PaginationDto,
   ) {
-    console.log('🏪 Request for ALL shop orders from user:', user.name);
     return this.ordersService.findAllOrdersByShopOwner(user, paginationDto);
   }
 
@@ -108,6 +102,12 @@ export class OrdersController {
     @GetUser() user: AuthUser,
   ) {
     return this.ordersService.updateStatus(orderId, updateOrderStatusDto, user);
+  }
+
+  @Post('fix-product-references')
+  @Auth(ValidRoles.presidente)
+  fixProductReferences() {
+    return this.ordersService.fixProductReferencesInOrders();
   }
 
   @Patch(':orderId/assign-delivery')

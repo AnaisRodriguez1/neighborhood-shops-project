@@ -86,6 +86,7 @@ export interface Order {
   id: string
   _id?: string
   customerId: string
+  client?: { _id: string; name: string; email: string } // Populated client data from backend
   shopId: string | Tienda
   shop?: Tienda
   items: OrderItem[]

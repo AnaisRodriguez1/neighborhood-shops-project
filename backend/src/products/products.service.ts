@@ -112,18 +112,14 @@ export class ProductsService {
 
     // ❌ Protege campos que NO deben ser actualizados
     delete (updateProductDto as any).slug;
-    delete (updateProductDto as any).shopId;
-    delete (updateProductDto as any).rating;
+    delete (updateProductDto as any).shopId;    delete (updateProductDto as any).rating;
     delete (updateProductDto as any).reviews;
     
-    console.log('DTO after cleanup:', JSON.stringify(updateProductDto, null, 2));    // ✅ Aplica campos actualizables
+    // ✅ Aplica campos actualizables
     Object.assign(product, updateProductDto);
-    
-    console.log('Product after Object.assign:', product.toObject());
 
     try {
       const result = await product.save(); // mantiene hooks como el de slug si cambia name
-      console.log('Product saved successfully:', result.toObject());
       console.log('=== END PRODUCTS SERVICE UPDATE ===');
       return result;
     } catch (error) {
