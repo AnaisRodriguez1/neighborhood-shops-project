@@ -121,15 +121,14 @@ export default function RegisterPage() {  const [formData, setFormData] = useSta
         // Para repartidores, solo guardamos la información básica del usuario
         // La información de delivery se puede configurar más tarde en el perfil
         // cuando el usuario proporcione coordenadas o active la geolocalización
-      } else if (formData.rol === "locatario") {
-        userData.shopData = {
+      } else if (formData.rol === "locatario") {        userData.shopData = {
           name: formData.shopName,
           description: formData.shopDescription,
           address: formData.shopAddress,
           phone: formData.shopPhone,
           email: formData.shopEmail,
           schedule: formData.shopSchedule,
-          delivery: formData.shopDelivery,
+          deliveryAvailable: formData.shopDelivery,
           categories: formData.shopCategories.split(',').map(cat => cat.trim()),
         }
       }

@@ -194,9 +194,7 @@ export default function TiendaDetallePage() {
                     <span>{shop.schedule}</span>
                   </div>
                 </div>
-              </div>
-
-              {shop.delivery && (
+              </div>              {shop.deliveryAvailable && (
                 <div className="mt-4 flex items-center space-x-2 text-green-600 dark:text-green-400">
                   <Truck className="w-5 h-5" />
                   <span className="font-medium">Delivery disponible</span>

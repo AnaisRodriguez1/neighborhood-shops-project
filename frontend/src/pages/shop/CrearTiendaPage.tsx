@@ -7,15 +7,14 @@ import { apiService } from "../../services/api"
 import { useAuth } from "../../context/AuthContext"
 import { Store, MapPin, Phone, Mail, Clock, Truck } from "lucide-react"
 
-export default function CrearTiendaPage() {
-  const [formData, setFormData] = useState({
+export default function CrearTiendaPage() {  const [formData, setFormData] = useState({
     name: "",
     description: "",
     address: "",
     phone: "",
     email: "",
     schedule: "",
-    delivery: false,
+    deliveryAvailable: false,
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -182,19 +181,17 @@ export default function CrearTiendaPage() {
                   placeholder="Ej: Lun-Vie 9:00-18:00, Sáb 9:00-14:00"
                 />
               </div>
-            </div>
-
-            {/* Delivery */}
+            </div>            {/* Delivery */}
             <div className="flex items-center space-x-3">
               <input
-                id="delivery"
-                name="delivery"
+                id="deliveryAvailable"
+                name="deliveryAvailable"
                 type="checkbox"
-                checked={formData.delivery}
+                checked={formData.deliveryAvailable}
                 onChange={handleChange}
                 className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
               />
-              <label htmlFor="delivery" className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="deliveryAvailable" className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 <Truck className="w-4 h-4" />
                 <span>Ofrecer servicio de delivery</span>
               </label>

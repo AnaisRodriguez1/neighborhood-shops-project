@@ -14,7 +14,7 @@ export interface Tienda {
   phone: string
   email: string
   schedule: string
-  delivery: boolean
+  deliveryAvailable: boolean
   slug: string
   rating?: number
   score?: number

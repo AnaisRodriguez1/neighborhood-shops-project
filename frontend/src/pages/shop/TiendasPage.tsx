@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { apiService } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { Star, Clock, MapPin, Truck, Phone, Mail, Store } from "lucide-react";
+import { Star, MapPin, Truck, Store } from "lucide-react";
 import { Tienda } from "../../types";
 import { capitalizeWords } from "../../utils/format";
 
@@ -155,31 +155,13 @@ export default function TiendasPage() {
                   <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
                     <MapPin className="w-4 h-4" />
                     <span className="truncate">{shop.address}</span>
-                  </div>
-
-                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                    <Clock className="w-4 h-4" />
-                    <span>{shop.schedule}</span>
-                  </div>
-
-                  {shop.delivery && (
+                  </div>                  {shop.deliveryAvailable && (
                     <div className="flex items-center space-x-2 text-sm text-green-600 dark:text-green-400">
                       <Truck className="w-4 h-4" />
                       <span>Delivery disponible</span>
                     </div>
                   )}
                 </div>{" "}
-                {/* Contact Info */}
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 dark:text-gray-400 mb-4">
-                  <div className="flex items-center space-x-1">
-                    <Phone className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate">{shop.phone}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Mail className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate">{shop.email}</span>
-                  </div>
-                </div>
               </div>
             </div>
           ))}
