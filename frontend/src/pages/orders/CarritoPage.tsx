@@ -2,12 +2,12 @@
 
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { useCart } from "../context/CartContext"
-import { useAuth } from "../context/AuthContext"
-import { useWebSocket } from "../hooks/useWebSocket"
-import { apiService } from "../services/api"
+import { useCart } from "../../context/CartContext"
+import { useAuth } from "../../context/AuthContext"
+import { useWebSocket } from "../../hooks/useWebSocket"
+import { apiService } from "../../services/api"
 import { ShoppingCart, Plus, Minus, Trash2, Store, Package } from "lucide-react"
-import { formatCurrency } from "../utils/format"
+import { formatCurrency } from "../../utils/format"
 
 export default function CarritoPage() {
   const { items, updateQuantity, removeFromCart, clearCart, getTotalItems, getTotalPrice } = useCart()

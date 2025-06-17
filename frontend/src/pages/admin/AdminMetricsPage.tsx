@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAuth } from "../context/AuthContext"
-import { apiService } from "../services/api"
 import { BarChart3, TrendingUp, Store, Users, ShoppingCart, Package } from "lucide-react"
+import { useAuth } from "../../context/AuthContext"
+import { apiService } from "../../services/api"
 
 interface AdminMetrics {
   overview: {

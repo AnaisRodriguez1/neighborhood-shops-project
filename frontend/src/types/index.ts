@@ -20,6 +20,7 @@ export interface Tienda {
   score?: number
   ownerId: string
   isActive?: boolean
+  images?: string[] // [icono, dashboard]
 }
 
 export interface Product {

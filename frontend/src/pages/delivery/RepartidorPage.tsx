@@ -1,8 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../context/AuthContext'
-import { useWebSocket } from '../hooks/useWebSocket'
-import { apiService } from '../services/api'
-import { Order } from '../types'
 import { 
   Package, 
   MapPin, 
@@ -14,7 +10,11 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import OrderDetailModal from '../components/OrderDetailModal'
+import { useAuth } from '../../context/AuthContext'
+import { useWebSocket } from '../../hooks/useWebSocket'
+import { Order } from '../../types'
+import { apiService } from '../../services/api'
+import OrderDetailModal from '../../components/OrderDetailModal'
 
 const statusColors = {
   en_entrega: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400',

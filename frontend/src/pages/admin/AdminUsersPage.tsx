@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { apiService } from '../services/api';
-import { useAuth } from '../context/AuthContext';
 import { Users, Trash2, AlertTriangle, User, Store, Truck, Crown, ShoppingCart } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { apiService } from '../../services/api';
 
 interface Usuario {
   id: string;

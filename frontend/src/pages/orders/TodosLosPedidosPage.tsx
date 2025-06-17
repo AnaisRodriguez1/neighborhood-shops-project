@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Package, Eye, RefreshCw, AlertCircle, Store } from 'lucide-react'
-import { Order } from '../types'
-import { apiService } from '../services/api'
-import { useAuth } from '../context/AuthContext'
-import { useWebSocket } from '../hooks/useWebSocket'
-import OrderDetailModal from '../components/OrderDetailModal'
+import { Order } from '../../types'
+import { apiService } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
+import { useWebSocket } from '../../hooks/useWebSocket'
+import OrderDetailModal from '../../components/OrderDetailModal'
 
 type OrderStatus = 'pendiente' | 'confirmado' | 'preparando' | 'listo' | 'en_entrega' | 'entregado' | 'cancelado'
 

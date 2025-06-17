@@ -5,7 +5,7 @@ import { Store, Package, Users, ShoppingCart, Settings, BarChart3, Plus, Clipboa
 import { Link } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { getMyShopsRequest } from "../api/shopsApi"
-import { capitalizeWords } from "@/utils/format"
+import { capitalizeWords } from "../utils/format"
 
 interface DashboardShop {
   id: string

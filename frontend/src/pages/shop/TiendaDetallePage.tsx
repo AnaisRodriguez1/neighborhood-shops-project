@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react"
 import { useParams, Link } from "react-router-dom"
-import { apiService } from "../services/api"
-import { useAuth } from "../context/AuthContext"
-import { useCart } from "../context/CartContext"
+import { apiService } from "../../services/api"
+import { useAuth } from "../../context/AuthContext"
+import { useCart } from "../../context/CartContext"
 import { Star, MapPin, Phone, Mail, Clock, Truck, Package, Plus, Edit, Trash2, ShoppingCart, ChevronLeft, ChevronRight, ClipboardList } from "lucide-react"
-import { Tienda, Product } from "../types"
-import { capitalizeWords, formatCurrency } from "../utils/format"
-import ShopOrdersManagement from "../components/ShopOrdersManagement"
+import { Tienda, Product } from "../../types"
+import { capitalizeWords, formatCurrency } from "../../utils/format"
+import ShopOrdersManagement from "../../components/ShopOrdersManagement"
 
 export default function TiendaDetallePage() {
   const { id } = useParams<{ id: string }>()

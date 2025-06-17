@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../context/AuthContext'
-import { apiService } from '../services/api'
+import { useAuth } from '../../context/AuthContext'
+import { apiService } from '../../services/api'
 import { Clock, Package, CheckCircle, User, MapPin, AlertCircle } from 'lucide-react'
 
 interface OrderItem {

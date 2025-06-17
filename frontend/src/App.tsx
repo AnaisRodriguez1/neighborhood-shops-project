@@ -8,21 +8,31 @@ import "./App.css"
 
 // Pages
 import HomePage from "./pages/HomePage"
-import LoginPage from "./pages/LoginPage"
-import RegisterPage from "./pages/RegisterPage"
 import DashboardPage from "./pages/DashboardPage"
-import TiendasPage from "./pages/TiendasPage"
-import TiendaDetallePage from "./pages/TiendaDetallePage"
-import CrearTiendaPage from "./pages/CrearTiendaPage"
-import CrearProductoPage from "./pages/CrearProductoPage"
-import CarritoPage from "./pages/CarritoPage"
-import MisPedidosPage from "./pages/MisPedidosPage"
-import AdminMetricsPage from "./pages/AdminMetricsPage"
-import AdminShopsPage from "./pages/AdminShopsPage"
-import AdminProductsPage from "./pages/AdminProductsPage"
-import AdminUsersPage from "./pages/AdminUsersPage"
-import TodosLosPedidosPage from "./pages/TodosLosPedidosPage"
-import RepartidorPage from "./pages/RepartidorPage"
+
+// Auth Pages
+import LoginPage from "./pages/auth/LoginPage"
+import RegisterPage from "./pages/auth/RegisterPage"
+
+// Shop Pages
+import TiendasPage from "./pages/shop/TiendasPage"
+import TiendaDetallePage from "./pages/shop/TiendaDetallePage"
+import CrearTiendaPage from "./pages/shop/CrearTiendaPage"
+import CrearProductoPage from "./pages/shop/CrearProductoPage"
+
+// Order Pages
+import CarritoPage from "./pages/orders/CarritoPage"
+import MisPedidosPage from "./pages/orders/MisPedidosPage"
+import TodosLosPedidosPage from "./pages/orders/TodosLosPedidosPage"
+
+// Delivery Pages
+import RepartidorPage from "./pages/delivery/RepartidorPage"
+
+// Admin Pages
+import AdminMetricsPage from "./pages/admin/AdminMetricsPage"
+import AdminShopsPage from "./pages/admin/AdminShopsPage"
+import AdminProductsPage from "./pages/admin/AdminProductsPage"
+import AdminUsersPage from "./pages/admin/AdminUsersPage"
 
 function App() {
   return (

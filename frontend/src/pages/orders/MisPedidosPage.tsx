@@ -1,10 +1,10 @@
 "use client"
 
-import { useAuth } from "../context/AuthContext"
+import { useAuth } from "../../context/AuthContext"
 import { useEffect, useState } from "react"
-import { apiService } from "../services/api"
-import { useWebSocket } from "../hooks/useWebSocket"
-import { Order } from "../types"
+import { apiService } from "../../services/api"
+import { useWebSocket } from "../../hooks/useWebSocket"
+import { Order } from "../../types"
 import { 
   Package, 
   Clock, 
@@ -16,7 +16,7 @@ import {
   Filter
 } from "lucide-react"
 import { Link } from "react-router-dom"
-import OrderDetailModal from "../components/OrderDetailModal"
+import OrderDetailModal from "../../components/OrderDetailModal"
 
 const statusConfig = {
   pendiente: { label: "Pendiente", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400", icon: Clock },

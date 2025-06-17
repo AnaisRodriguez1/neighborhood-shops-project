@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { apiService } from '../services/api';
 import { Store, Trash2, AlertTriangle, Star, MapPin, Users } from 'lucide-react';
-import { Tienda } from '../types';
-import { capitalizeWords } from '../utils/format';
+import { Tienda } from '../../types';
+import { apiService } from '../../services/api';
+import { capitalizeWords } from '../../utils/format';
 
 export default function AdminShopsPage() {
   const [shops, setShops] = useState<Tienda[]>([]);

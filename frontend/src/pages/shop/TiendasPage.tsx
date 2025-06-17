@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { apiService } from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import { apiService } from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 import { Star, Clock, MapPin, Truck, Phone, Mail, Store } from "lucide-react";
-import { Tienda } from "../types";
-import { capitalizeWords } from "../utils/format";
+import { Tienda } from "../../types";
+import { capitalizeWords } from "../../utils/format";
 
 export default function TiendasPage() {
   const [shops, setShops] = useState<Tienda[]>([]);
@@ -86,13 +86,50 @@ export default function TiendasPage() {
               key={shop.id}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
             >
-              {" "}
-              {/* Shop Image Placeholder */}
-              <div className="h-48 bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center">
-                <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-2xl font-bold">
-                    {shop.name.charAt(0).toUpperCase()}
-                  </span>
+              {" "}              {/* Shop Image */}
+              <div className="h-48 relative overflow-hidden">
+                {shop.images && shop.images[1] ? (
+                  // Imagen de banner (dashboard) si está disponible
+                  <img
+                    src={shop.images[1]}
+                    alt={`Banner de ${shop.name}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback si la imagen no carga
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.parentElement!.querySelector('.fallback-banner')!.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                {/* Fallback banner si no hay imagen */}
+                <div className={`fallback-banner absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center ${shop.images && shop.images[1] ? 'hidden' : ''}`}>
+                  <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-2xl font-bold text-white">
+                      {shop.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Profile Image (icono) overlay */}
+                <div className="absolute bottom-4 left-4">
+                  {shop.images && shop.images[0] ? (
+                    <img
+                      src={shop.images[0]}
+                      alt={`Logo de ${shop.name}`}
+                      className="w-16 h-16 rounded-full border-4 border-white shadow-lg object-cover"
+                      onError={(e) => {
+                        // Fallback si la imagen no carga
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.querySelector('.fallback-profile')!.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  {/* Fallback profile si no hay imagen */}
+                  <div className={`fallback-profile w-16 h-16 bg-white bg-opacity-90 rounded-full border-4 border-white shadow-lg flex items-center justify-center ${shop.images && shop.images[0] ? 'hidden' : ''}`}>
+                    <span className="text-xl font-bold text-gray-800">
+                      {shop.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="p-6">

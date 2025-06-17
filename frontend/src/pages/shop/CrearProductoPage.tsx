@@ -3,8 +3,8 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { apiService } from "../services/api"
-import { useAuth } from "../context/AuthContext"
+import { apiService } from "../../services/api"
+import { useAuth } from "../../context/AuthContext"
 import { Package, DollarSign, Hash, FileText, Tag, ImageIcon } from "lucide-react"
 
 interface CrearProductoShop {

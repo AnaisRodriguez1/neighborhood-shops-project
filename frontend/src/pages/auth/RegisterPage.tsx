@@ -3,8 +3,8 @@
 import type React from "react"
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { useAuth } from "../context/AuthContext"
 import { Eye, EyeOff, Mail, Lock, User, UserCheck, Truck, MapPin, Phone, Clock, Tag } from "lucide-react"
+import { useAuth } from "../../context/AuthContext"
 
 export default function RegisterPage() {  const [formData, setFormData] = useState({
     name: "",

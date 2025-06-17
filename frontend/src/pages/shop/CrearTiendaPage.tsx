@@ -3,8 +3,8 @@
 import type React from "react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { apiService } from "../services/api"
-import { useAuth } from "../context/AuthContext"
+import { apiService } from "../../services/api"
+import { useAuth } from "../../context/AuthContext"
 import { Store, MapPin, Phone, Mail, Clock, Truck } from "lucide-react"
 
 export default function CrearTiendaPage() {
