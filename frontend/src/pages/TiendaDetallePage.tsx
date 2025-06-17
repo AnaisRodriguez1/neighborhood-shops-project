@@ -4,14 +4,14 @@ import { apiService } from "../services/api"
 import { useAuth } from "../context/AuthContext"
 import { useCart } from "../context/CartContext"
 import { Star, MapPin, Phone, Mail, Clock, Truck, Package, Plus, Edit, Trash2, ShoppingCart, ChevronLeft, ChevronRight, ClipboardList } from "lucide-react"
-import { Tienda, Producto } from "../types"
+import { Tienda, Product } from "../types"
 import { capitalizeWords, formatCurrency } from "../utils/format"
 import ShopOrdersManagement from "../components/ShopOrdersManagement"
 
 export default function TiendaDetallePage() {
   const { id } = useParams<{ id: string }>()
   const [shop, setShop] = useState<Tienda | null>(null)
-  const [products, setProducts] = useState<Producto[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
@@ -49,7 +49,7 @@ export default function TiendaDetallePage() {
     }
   }
 
-  const handleAddToCart = (product: Producto) => {
+  const handleAddToCart = (product: Product) => {
     if (shop) {
       addToCart(product, shop)
       // Aquí podrías mostrar una notificación de éxito

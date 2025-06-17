@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext"
 import { useOrderNotifications } from "../hooks/useOrderNotifications"
 import { ShoppingCart, Package, Star, Plus } from "lucide-react"
 import { Product, Tienda } from "../types"
-import { formatCurrency } from "../utils/format"
+import { capitalizeWords } from '../utils/format';
 import OrderNotifications from "../components/OrderNotifications"
 
 export default function HomePage() {
@@ -82,7 +82,7 @@ export default function HomePage() {
     }
     
     const shop = shops.find(s => s.id === actualShopId)
-    return shop?.name || "Tienda"
+    return capitalizeWords(shop?.name || "Tienda")
   }
 
   return (
@@ -144,7 +144,7 @@ export default function HomePage() {
               {products.slice(0, 12).map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                  className="bg-white dark:bg-gray-800 rounded-3xl rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
                 >                    {/* Product Image */}
                     <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center">
                       {product.images && product.images.length > 0 ? (
@@ -176,17 +176,6 @@ export default function HomePage() {
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `
-                                <div class="text-gray-500 dark:text-gray-400 text-center">
-                                  <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                                  </svg>
-                                  <span class="text-sm">Sin imagen</span>
-                                </div>
-                              `;
-                            }
                           }}
                         />
                       ) : (
@@ -221,22 +210,11 @@ export default function HomePage() {
                       <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
                         {product.description}
                       </p>
-                    )}                    {/* Debug info */}
-                    <div className="text-xs text-gray-400 mb-2">
-                      Usuario: {user ? `${user.name} (${user.role})` : "No logueado"}
-                    </div>
+                    )}
 
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                          {formatCurrency(product.price)}
-                        </span>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          Stock: {product.stock}
-                        </div>
-                      </div>
+                    <div className="flex items-center justify-center">
 
-                      {/* Botón agregar al carrito */}
+                      {/* Botón agregar al carrito, NEWCESARIO QUE HAYA STOCK DEL PRODUCTO */}
                       {product.stock > 0 && (
                         <button
                           onClick={() => handleAddToCart(product)}
