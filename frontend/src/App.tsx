@@ -17,6 +17,7 @@ import RegisterPage from "./pages/auth/RegisterPage"
 // Shop Pages
 import TiendasPage from "./pages/shop/TiendasPage"
 import TiendaDetallePage from "./pages/shop/TiendaDetallePage"
+import ProductoDetallePage from "./pages/shop/ProductoDetallePage"
 import CrearTiendaPage from "./pages/shop/CrearTiendaPage"
 import CrearProductoPage from "./pages/shop/CrearProductoPage"
 
@@ -42,13 +43,13 @@ function App() {
           <BrowserRouter>
             <div className="app-container relative z-10 min-h-screen">
               <Header />
-              <Routes>
-                {/* Public routes */}
+              <Routes>                {/* Public routes */}
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/tiendas" element={<TiendasPage />} />
                 <Route path="/tiendas/:id" element={<TiendaDetallePage />} />
+                <Route path="/productos/:id" element={<ProductoDetallePage />} />
 
                 {/* Protected routes */}
                 <Route

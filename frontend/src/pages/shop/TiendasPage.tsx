@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiService } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { Star, MapPin, Truck, Store } from "lucide-react";
@@ -14,6 +15,7 @@ export default function TiendasPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const {} = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadShops();
@@ -38,8 +40,13 @@ export default function TiendasPage() {
       setLoading(false);
     }
   };
+
   const loadMore = () => {
     setPage((prev) => prev + 1);
+  };
+
+  const handleShopClick = (shopId: string) => {
+    navigate(`/tiendas/${shopId}`);
   };
 
   // Ordenar tiendas por score (de mayor a menor)
@@ -77,14 +84,13 @@ export default function TiendasPage() {
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-6">
             {error}
           </div>
-        )}
-
-        {/* Tiendas Grid */}
+        )}        {/* Tiendas Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedShops.map((shop) => (
             <div
               key={shop.id}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+              onClick={() => handleShopClick(shop.id)}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 transform"
             >
               {" "}              {/* Shop Image */}
               <div className="h-48 relative overflow-hidden">
@@ -149,8 +155,7 @@ export default function TiendasPage() {
                 </div>
                 <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
                   {shop.description}
-                </p>
-                {/* Shop Info */}
+                </p>                {/* Shop Info */}
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
                     <MapPin className="w-4 h-4" />
@@ -161,7 +166,21 @@ export default function TiendasPage() {
                       <span>Delivery disponible</span>
                     </div>
                   )}
-                </div>{" "}
+                </div>
+                
+                {/* View Shop Button */}
+                <div className="mt-4">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleShopClick(shop.id);
+                    }}
+                    className="w-full bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium text-sm flex items-center justify-center space-x-2"
+                  >
+                    <Store className="w-4 h-4" />
+                    <span>Ver Tienda</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))}

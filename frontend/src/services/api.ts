@@ -117,9 +117,13 @@ export const apiService = {
   updateProduct: async (id: string, productData: any) => {
     const { data } = await api.patch(`/products/${id}`, productData)
     return data
-  },
-  deleteProduct: async (id: string) => {
+  },  deleteProduct: async (id: string) => {
     const { data } = await api.delete(`/products/${id}`)
+    return data
+  },
+
+  rateProduct: async (productId: string, ratingData: { rating: number; comment?: string; userId: string }) => {
+    const { data } = await api.post(`/products/${productId}/rate`, ratingData)
     return data
   },
   // Admin Methods for deleting products

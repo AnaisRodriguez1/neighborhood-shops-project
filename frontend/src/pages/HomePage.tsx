@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { apiService } from "../services/api"
 import { useCart } from "../context/CartContext"
 import { useAuth } from "../context/AuthContext"
@@ -17,6 +17,7 @@ export default function HomePage() {
   const { addToCart, getTotalItems } = useCart()
   const { user } = useAuth()
   const { notifications, addNotification, dismissNotification } = useOrderNotifications()
+  const navigate = useNavigate()
 
   useEffect(() => {
     loadProductsAndShops()
@@ -65,12 +66,12 @@ export default function HomePage() {
       console.log("✅ Agregando al carrito:", product.name, "de tienda:", shop.name)
       addToCart(product, shop)
       addNotification(`${product.name} agregado al carrito`, 'success')
-    } else {
-      console.log("❌ No se encontró la tienda para el Product:", product.shopId)
+    } else {      console.log("❌ No se encontró la tienda para el Product:", product.shopId)
       console.log("❌ ShopId extraído:", shopId)
       console.log("❌ IDs de tiendas disponibles:", shops.map(s => s.id))
     }
   }
+  
   const getShopName = (shopId: string | any) => {
     let actualShopId: string
     if (typeof shopId === 'string') {
@@ -83,6 +84,10 @@ export default function HomePage() {
     
     const shop = shops.find(s => s.id === actualShopId)
     return capitalizeWords(shop?.name || "Tienda")
+  }
+
+  const handleProductClick = (productId: string) => {
+    navigate(`/productos/${productId}`)
   }
 
   return (
@@ -139,13 +144,13 @@ export default function HomePage() {
             </div>
           )}
 
-          {!loading && !error && products.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {!loading && !error && products.length > 0 && (            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.slice(0, 12).map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white dark:bg-gray-800 rounded-3xl rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-                >                    {/* Product Image */}
+                  onClick={() => handleProductClick(product.id)}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 transform"
+                >{/* Product Image */}
                     <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center">
                       {product.images && product.images.length > 0 ? (
                         <img

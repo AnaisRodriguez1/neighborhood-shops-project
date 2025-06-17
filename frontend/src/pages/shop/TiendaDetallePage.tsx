@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react"
-import { useParams, Link } from "react-router-dom"
+import { useParams, Link, useNavigate } from "react-router-dom"
 import { apiService } from "../../services/api"
 import { useAuth } from "../../context/AuthContext"
 import { useCart } from "../../context/CartContext"
-import { Star, MapPin, Phone, Mail, Clock, Truck, Package, Plus, Edit, Trash2, ShoppingCart, ChevronLeft, ChevronRight, ClipboardList } from "lucide-react"
+import { Star, MapPin, Truck, Package, Plus, Edit, Trash2, ShoppingCart, ChevronLeft, ChevronRight, ClipboardList } from "lucide-react"
 import { Tienda, Product } from "../../types"
 import { capitalizeWords, formatCurrency } from "../../utils/format"
 import ShopOrdersManagement from "../../components/ShopOrdersManagement"
 
 export default function TiendaDetallePage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [shop, setShop] = useState<Tienda | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,7 +56,6 @@ export default function TiendaDetallePage() {
       // Aquí podrías mostrar una notificación de éxito
     }
   }
-
   const handleDeleteProduct = async (productId: string) => {
     if (window.confirm("¿Estás seguro de que quieres eliminar este producto?")) {
       try {
@@ -65,6 +65,10 @@ export default function TiendaDetallePage() {
         alert("Error al eliminar el producto: " + err.message)
       }
     }
+  }
+
+  const handleProductClick = (productId: string) => {
+    navigate(`/productos/${productId}`)
   }
 
   // Obtener categorías únicas
@@ -113,21 +117,56 @@ export default function TiendaDetallePage() {
       </div>
     )
   }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Shop Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Shop Image */}
             <div className="lg:col-span-1">
-              <div className="h-64 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
-                <div className="text-white text-center">
-                  <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-3xl font-bold">{shop.name.charAt(0)}</span>
+              <div className="h-64 relative rounded-xl overflow-hidden">
+                {/* Banner Image */}
+                {shop.images && shop.images[1] ? (
+                  <img
+                    src={shop.images[1]}
+                    alt={`Banner de ${shop.name}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.parentElement!.querySelector('.fallback-banner')!.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                {/* Fallback banner */}
+                <div className={`fallback-banner absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center ${shop.images && shop.images[1] ? 'hidden' : ''}`}>
+                  <div className="text-white text-center">
+                    <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-3xl font-bold">{shop.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <p className="text-sm opacity-90">Banner de tienda</p>
                   </div>
-                  <p className="text-sm opacity-90">Imagen de tienda</p>
+                </div>
+                
+                {/* Profile Image Overlay */}
+                <div className="absolute bottom-4 left-4">
+                  {shop.images && shop.images[0] ? (
+                    <img
+                      src={shop.images[0]}
+                      alt={`Logo de ${shop.name}`}
+                      className="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.querySelector('.fallback-profile')!.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  {/* Fallback profile */}
+                  <div className={`fallback-profile w-20 h-20 bg-white bg-opacity-90 rounded-full border-4 border-white shadow-lg flex items-center justify-center ${shop.images && shop.images[0] ? 'hidden' : ''}`}>
+                    <span className="text-2xl font-bold text-gray-800">
+                      {shop.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -178,20 +217,6 @@ export default function TiendaDetallePage() {
                   <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-300">
                     <MapPin className="w-5 h-5" />
                     <span>{shop.address}</span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-300">
-                    <Phone className="w-5 h-5" />
-                    <span>{shop.phone}</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-300">
-                    <Mail className="w-5 h-5" />
-                    <span>{shop.email}</span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-gray-600 dark:text-gray-300">
-                    <Clock className="w-5 h-5" />
-                    <span>{shop.schedule}</span>
                   </div>
                 </div>
               </div>              {shop.deliveryAvailable && (
@@ -363,25 +388,60 @@ export default function TiendaDetallePage() {
 
             {/* Products Grid */}
             {currentProducts.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <>                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {currentProducts.map((product) => (
                     <div
                       key={product.id}
-                      className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-                    >
-                      {/* Product Image */}
+                      onClick={() => handleProductClick(product.id)}
+                      className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 transform"
+                    >{/* Product Image */}
                       <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center">
-                        {product.image ? (
+                        {product.images && product.images.length > 0 ? (
                           <img
-                            src={product.image || "/placeholder.svg"}
+                            src={product.images[0]}
                             alt={product.name}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `
+                                  <div class="text-gray-500 dark:text-gray-400 text-center">
+                                    <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                    </svg>
+                                    <span class="text-sm">Sin imagen</span>
+                                  </div>
+                                `;
+                              }
+                            }}
+                          />
+                        ) : product.image ? (
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `
+                                  <div class="text-gray-500 dark:text-gray-400 text-center">
+                                    <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                    </svg>
+                                    <span class="text-sm">Sin imagen</span>
+                                  </div>
+                                `;
+                              }
+                            }}
                           />
                         ) : (
                           <div className="text-gray-500 dark:text-gray-400 text-center">
                             <Package className="w-12 h-12 mx-auto mb-2" />
-                            <p className="text-sm">Sin imagen</p>
+                            <span className="text-sm">Sin imagen</span>
                           </div>
                         )}
                       </div>
@@ -392,14 +452,21 @@ export default function TiendaDetallePage() {
                           <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(product.price)}</span>
                         </div>
 
-                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">{product.description}</p>
-
-                        <div className="flex justify-between items-center mb-4">
+                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">{product.description}</p>                        <div className="flex justify-between items-center mb-4">
                           <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded">{product.category}</span>
                           <span
                             className={`text-xs px-2 py-1 rounded ${product.stock > 0 ? "bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400" : "bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400"}`}
                           >
-                            {product.stock > 0 ? `Stock: ${product.stock}` : "Sin stock"}
+                            {product.stock > 0 
+                              ? product.stock === 1 
+                                ? "¡Última unidad!" 
+                                : product.stock <= 5 
+                                  ? `¡Solo quedan ${product.stock}!` 
+                                  : product.stock <= 10 
+                                    ? `¡Últimas ${product.stock} unidades!` 
+                                    : `${product.stock} disponibles`
+                              : "Sin stock"
+                            }
                           </span>
                         </div>
 
