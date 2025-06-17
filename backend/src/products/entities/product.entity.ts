@@ -69,42 +69,11 @@ export class Product extends Document{
     })
     rating: number;
 
-  images:[
-    {
-      publicId:{
-        type: String,
-        required: true,
-      },
-      url:{
-        type: String,
-        required: true,
-      }
-    },
-  ];
-
-    reviews: [
-        {
-          user:{
-            userId: MongooseSchema.Types.ObjectId;
-            ref: 'User';
-            required: true;
-          };
-          rating: {
-            type: Number;
-            required: true;
-          }
-          comment: {
-            type: String;
-            required: true;
-          };
-        }
-    ];
-    user:{
-      userId: MongooseSchema.Types.ObjectId;
-      ref: 'User';
-      required: true;
-    };
-
+  @Prop({
+    type: [String],
+    default: []
+  })
+  images: string[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

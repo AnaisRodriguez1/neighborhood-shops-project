@@ -306,9 +306,9 @@ const allRawProducts = [
 
 export const products = allRawProducts.map(p => {
   const slug = p.name.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita acentos
-    .replace(/\s+/g, '-') // reemplaza espacios con guiones
-    .replace(/[^\w-]+/g, ''); // elimina caracteres no alfanuméricos excepto guiones
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') 
+    .replace(/\s+/g, '-') 
+    .replace(/[^\w-]+/g, ''); 
 
   return {
     name: p.name,
@@ -318,12 +318,7 @@ export const products = allRawProducts.map(p => {
     calories: Number(p.calories),
     stock: Number(p.stock),
     slug,
-    images: [
-      {
-        publicId: slug, // Usar el slug generado como publicId
-        url: p.images
-      }
-    ],
+    images: [p.images], // Array de strings
     shopId: p.shopId
   };
 });
