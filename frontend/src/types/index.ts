@@ -22,7 +22,7 @@ export interface Tienda {
   isActive?: boolean
 }
 
-export interface Producto {
+export interface Product {
   id: string
   name: string
   description: string
@@ -30,7 +30,7 @@ export interface Producto {
   category?: string
   stock: number
   image?: string
-  images?: Array<{ publicId: string; url: string }>
+  images?: string[]
   shopId: string
   tags?: string[]
   calories?: number
@@ -38,26 +38,8 @@ export interface Producto {
   slug?: string
 }
 
-export interface Product {
-  id: string
-  name: string
-  description: string
-  price: number
-  stock: number
-  rating?: number
-  images?: Array<{ publicId: string; url: string }>
-  shopId: string | { name: string; _id: string }
-  tags?: string[]
-  calories?: number
-  slug?: string
-  // Computed properties for admin functionality
-  title?: string
-  isActive?: boolean
-  score?: number
-}
-
 export interface CartItem {
-  product: Producto
+  product: Product
   quantity: number
   shop: Tienda
 }

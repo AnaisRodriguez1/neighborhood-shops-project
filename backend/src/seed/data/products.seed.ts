@@ -14,7 +14,7 @@ const verduleriaProducts = [
     "tags": "lechuga,verduras,hortaliza,verde,coquimbo",
     "calories": "13",
     "stock": "300",
-    "images": "https://santaisabel.vtexassets.com/arquivos/ids/286982-900-900",
+    "images": "https://plus.unsplash.com/premium_photo-1664475450083-5c9eef17a191?w=400&h=400&fit=crop&crop=center",
     "shopId": VERDULERIA_ID
   },
   {
@@ -24,7 +24,7 @@ const verduleriaProducts = [
     "tags": "tomate,verduras,fruta,rojo,laserena",
     "calories": "18",
     "stock": "200",
-    "images": "https://santaisabel.vtexassets.com/arquivos/ids/286983-900-900",
+    "images": "https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400&h=400&fit=crop&crop=center",
     "shopId": VERDULERIA_ID
   },
   {
@@ -34,7 +34,7 @@ const verduleriaProducts = [
     "tags": "palta,aguacate,verde,cremoso,coquimbo",
     "calories": "160",
     "stock": "180",
-    "images": "https://santaisabel.vtexassets.com/arquivos/ids/286984-900-900",
+    "images": "https://images.unsplash.com/photo-1601039641847-7857b994d704?w=400&h=400&fit=crop&crop=center",
     "shopId": VERDULERIA_ID
   },
   {
@@ -44,7 +44,7 @@ const verduleriaProducts = [
     "tags": "limon,citrico,amarillo,elqui,pisco",
     "calories": "29",
     "stock": "250",
-    "images": "https://santaisabel.vtexassets.com/arquivos/ids/286985-900-900",
+    "images": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400&h=400&fit=crop&crop=center",
     "shopId": VERDULERIA_ID
   },
   {
@@ -54,7 +54,7 @@ const verduleriaProducts = [
     "tags": "cebolla,verduras,blanco,condimento",
     "calories": "40",
     "stock": "200",
-    "images": "https://santaisabel.vtexassets.com/arquivos/ids/286986-900-900",
+    "images": "https://santaisabel.vtexassets.com/arquivos/ids/288942-900-900?width=900&height=900&aspect=true",
     "shopId": VERDULERIA_ID
   },
   {
@@ -64,7 +64,7 @@ const verduleriaProducts = [
     "tags": "uvas,fruta,dulce,elqui,moscatel",
     "calories": "69",
     "stock": "150",
-    "images": "https://santaisabel.vtexassets.com/arquivos/ids/286987-900-900",
+    "images": "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=400&h=400&fit=crop&crop=center",
     "shopId": VERDULERIA_ID
   },
   {
@@ -74,7 +74,7 @@ const verduleriaProducts = [
     "tags": "pimentón,verduras,rojo,saludable",
     "calories": "31",
     "stock": "140",
-    "images": "https://santaisabel.vtexassets.com/arquivos/ids/286988-900-900",
+    "images": "https://images.unsplash.com/photo-1525607551316-4a8e16d1f9ba?w=400&h=400&fit=crop&crop=center",
     "shopId": VERDULERIA_ID
   },
   {
@@ -84,7 +84,7 @@ const verduleriaProducts = [
     "tags": "brócoli,verduras,verde,nutritivo",
     "calories": "34",
     "stock": "160",
-    "images": "https://santaisabel.vtexassets.com/arquivos/ids/286989-900-900",
+    "images": "https://santaisabel.vtexassets.com/arquivos/ids/161017-900-900?width=900&height=900&aspect=true",
     "shopId": VERDULERIA_ID
   },
   {
@@ -94,7 +94,7 @@ const verduleriaProducts = [
     "tags": "espinaca,verduras,verde,hojas",
     "calories": "23",
     "stock": "200",
-    "images": "https://santaisabel.vtexassets.com/arquivos/ids/286990-900-900",
+    "images": "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400&h=400&fit=crop&crop=center",
     "shopId": VERDULERIA_ID
   },
   {
@@ -104,7 +104,7 @@ const verduleriaProducts = [
     "tags": "cebolla,verduras,morada,sabor",
     "calories": "40",
     "stock": "190",
-    "images": "https://santaisabel.vtexassets.com/arquivos/ids/286991-900-900",
+    "images": "https://santaisabel.vtexassets.com/arquivos/ids/169523-900-900?width=900&height=900&aspect=true",
     "shopId": VERDULERIA_ID
   }
 ];
@@ -118,7 +118,7 @@ const electromundoProducts = [
     "tags": "televisor,samsung,4k,smart,entretenimiento",
     "calories": "0",
     "stock": "15",
-    "images": "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=400&h=400&fit=crop&crop=center",
+    "images": "https://images.unsplash.com/photo-1567690187548-f07b1d7bf5a9?w=400&h=400&fit=crop&crop=center",
     "shopId": ELECTROMUNDO_ID
   },
   {
@@ -138,7 +138,7 @@ const electromundoProducts = [
     "tags": "laptop,hp,computador,trabajo,estudio",
     "calories": "0",
     "stock": "12",
-    "images": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=400&fit=crop&crop=center",
+    "images": "https://images.unsplash.com/photo-1484788984921-03950022c9ef?w=400&h=400&fit=crop&crop=center",
     "shopId": ELECTROMUNDO_ID
   },
   {
@@ -148,7 +148,7 @@ const electromundoProducts = [
     "tags": "lavadora,automatica,electrodomestico,hogar,lavado",
     "calories": "0",
     "stock": "6",
-    "images": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop&crop=center",
+    "images": "https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=400&h=400&fit=crop&crop=center",
     "shopId": ELECTROMUNDO_ID
   },
   {
@@ -178,7 +178,7 @@ const electromundoProducts = [
     "tags": "aspiradora,vertical,inalambrica,limpieza,hogar",
     "calories": "0",
     "stock": "18",
-    "images": "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&h=400&fit=crop&crop=center",
+    "images": "https://media.falabella.com/falabellaCL/17415027_1/w=800,h=800,fit=pad",
     "shopId": ELECTROMUNDO_ID
   },
   {
@@ -188,7 +188,7 @@ const electromundoProducts = [
     "tags": "aire,acondicionado,split,climatizacion,hogar",
     "calories": "0",
     "stock": "10",
-    "images": "https://images.unsplash.com/photo-1571175351169-1a68cfd59e7d?w=400&h=400&fit=crop&crop=center",
+    "images": "https://media.falabella.com/sodimacCL/7261608_001/w=1500,h=1500,fit=pad",
     "shopId": ELECTROMUNDO_ID
   }
 ];
@@ -212,7 +212,7 @@ const farmaciaProducts = [
     "tags": "vitamina,c,suplemento,inmunidad,salud",
     "calories": "0",
     "stock": "80",
-    "images": "https://images.unsplash.com/photo-1550572017-edd951aa8ca0?w=400&h=400&fit=crop&crop=center",
+    "images": "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=400&fit=crop&crop=center",
     "shopId": FARMACIA_ID
   },
   {
@@ -232,7 +232,7 @@ const farmaciaProducts = [
     "tags": "alcohol,gel,antibacterial,higiene,desinfeccion",
     "calories": "0",
     "stock": "200",
-    "images": "https://images.unsplash.com/photo-1584435364829-24e460a631b8?w=400&h=400&fit=crop&crop=center",
+    "images": "https://santaisabel.vtexassets.com/arquivos/ids/288235-280-280?width=280&height=280&aspect=true",
     "shopId": FARMACIA_ID
   },
   {
@@ -242,7 +242,7 @@ const farmaciaProducts = [
     "tags": "ibuprofeno,antiinflamatorio,medicamento,dolor,inflamacion",
     "calories": "0",
     "stock": "120",
-    "images": "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=400&fit=crop&crop=center",
+    "images": "https://static.salcobrandonline.cl/spree/products/28716/small/437135.jpg?1641477867",
     "shopId": FARMACIA_ID
   },
   {
@@ -262,7 +262,7 @@ const farmaciaProducts = [
     "tags": "multivitaminico,vitaminas,minerales,suplemento,salud",
     "calories": "0",
     "stock": "70",
-    "images": "https://images.unsplash.com/photo-1559181567-c3190ca9959b?w=400&h=400&fit=crop&crop=center",
+    "images": "https://images.unsplash.com/photo-1550572017-edd951aa8ca0?w=400&h=400&fit=crop&crop=center",
     "shopId": FARMACIA_ID
   },
   {
@@ -292,7 +292,7 @@ const farmaciaProducts = [
     "tags": "omega,3,suplemento,cardiovascular,cerebral",
     "calories": "0",
     "stock": "55",
-    "images": "https://images.unsplash.com/photo-1550572017-edd951aa8ca0?w=400&h=400&fit=crop&crop=center",
+    "images": "https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?w=400&h=400&fit=crop&crop=center",
     "shopId": FARMACIA_ID
   }
 ];

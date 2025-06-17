@@ -10,7 +10,7 @@ interface ProductWithShop {
   price: number;
   stock: number;
   rating?: number;
-  images?: Array<{ publicId: string; url: string }>;
+  images?: string[];
   shopId?: { name: string; _id: string };
   shop?: { id: string; name: string };
   tags?: string[];
@@ -333,7 +333,7 @@ const AdminProductsPage: React.FC = () => {
                           <div className="flex-shrink-0 h-10 w-10">
                             <img
                               className="h-10 w-10 rounded object-cover"
-                              src={product.images[0].url}
+                              src={product.images[0]}
                               alt={product.name}
                             />
                           </div>

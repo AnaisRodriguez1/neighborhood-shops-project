@@ -5,12 +5,12 @@ import { useCart } from "../context/CartContext"
 import { useAuth } from "../context/AuthContext"
 import { useOrderNotifications } from "../hooks/useOrderNotifications"
 import { ShoppingCart, Package, Star, Plus } from "lucide-react"
-import { Producto, Tienda } from "../types"
+import { Product, Tienda } from "../types"
 import { formatCurrency } from "../utils/format"
 import OrderNotifications from "../components/OrderNotifications"
 
 export default function HomePage() {
-  const [products, setProducts] = useState<Producto[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [shops, setShops] = useState<Tienda[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -24,24 +24,24 @@ export default function HomePage() {
   const loadProductsAndShops = async () => {
     try {
       setLoading(true)
-      console.log("🔍 Cargando productos y tiendas...")
+      console.log("🔍 Cargando Products y tiendas...")
       const [productsResponse, shopsResponse] = await Promise.all([
         apiService.getProducts(),
         apiService.getShops()
       ])
       
-      console.log("📦 Productos cargados:", productsResponse)
+      console.log("📦 Products cargados:", productsResponse)
       console.log("🏪 Tiendas cargadas:", shopsResponse)
       
       setProducts(productsResponse)
       setShops(shopsResponse.data || shopsResponse)
     } catch (err) {
-      setError("Error al cargar los productos")
+      setError("Error al cargar los Products")
       console.error("❌ Error cargando datos:", err)    } finally {
       setLoading(false)
     }
   }
-  const handleAddToCart = (product: Producto) => {
+  const handleAddToCart = (product: Product) => {
     console.log("🛒 Intentando agregar al carrito:", product.name)
     console.log("👤 Usuario actual:", user)
     console.log("🏪 Tiendas disponibles:", shops)
@@ -59,14 +59,14 @@ export default function HomePage() {
     
     const shop = shops.find(s => s.id === shopId)
     console.log("🔍 ShopId extraído:", shopId)
-    console.log("🔍 Tienda encontrada para producto:", shop)
+    console.log("🔍 Tienda encontrada para Product:", shop)
     
     if (shop) {
       console.log("✅ Agregando al carrito:", product.name, "de tienda:", shop.name)
       addToCart(product, shop)
       addNotification(`${product.name} agregado al carrito`, 'success')
     } else {
-      console.log("❌ No se encontró la tienda para el producto:", product.shopId)
+      console.log("❌ No se encontró la tienda para el Product:", product.shopId)
       console.log("❌ ShopId extraído:", shopId)
       console.log("❌ IDs de tiendas disponibles:", shops.map(s => s.id))
     }
@@ -95,7 +95,7 @@ export default function HomePage() {
               Bienvenido a <span className="text-blue-900 dark:text-blue-400">Tienda Pez Caucho</span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto">
-              La plataforma que conecta tiendas locales con compradores. Descubre productos únicos, apoya negocios
+              La plataforma que conecta tiendas locales con compradores. Descubre Products únicos, apoya negocios
               locales y disfruta de una experiencia de compra excepcional y personalizada.
             </p>
             
@@ -119,17 +119,17 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Productos Destacados
+              Products Destacados
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300">
-              Descubre la variedad de productos disponibles en nuestras tiendas locales
+              Descubre la variedad de Products disponibles en nuestras tiendas locales
             </p>
           </div>
 
           {loading && (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-300">Cargando productos...</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-300">Cargando Products...</p>
             </div>
           )}
 
@@ -145,27 +145,62 @@ export default function HomePage() {
                 <div
                   key={product.id}
                   className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-                >
-                  {/* Product Image */}
-                  <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center">
-                    {product.image || (product.images && product.images.length > 0) ? (
-                      <img
-                        src={product.image || product.images?.[0]?.url || "/placeholder.svg"}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-gray-500 dark:text-gray-400 text-center">
-                        <Package className="w-12 h-12 mx-auto mb-2" />
-                        <span className="text-sm">Sin imagen</span>
-                      </div>
-                    )}
-                  </div>
+                >                    {/* Product Image */}
+                    <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center">
+                      {product.images && product.images.length > 0 ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `
+                                <div class="text-gray-500 dark:text-gray-400 text-center">
+                                  <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                  </svg>
+                                  <span class="text-sm">Sin imagen</span>
+                                </div>
+                              `;
+                            }
+                          }}
+                        />
+                      ) : product.image ? (
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `
+                                <div class="text-gray-500 dark:text-gray-400 text-center">
+                                  <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                  </svg>
+                                  <span class="text-sm">Sin imagen</span>
+                                </div>
+                              `;
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="text-gray-500 dark:text-gray-400 text-center">
+                          <Package className="w-12 h-12 mx-auto mb-2" />
+                          <span className="text-sm">Sin imagen</span>
+                        </div>
+                      )}
+                    </div>
 
                   {/* Product Info */}
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2 min-h-[3.5rem] flex items-center">
                         {product.name}
                       </h3>
                       {product.rating && (
