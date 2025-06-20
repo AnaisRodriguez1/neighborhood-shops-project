@@ -94,3 +94,16 @@ export interface OrderSummary {
   completedOrders: number
   totalRevenue: number
 }
+
+export interface Supplier {
+  id: string
+  name: string
+  description?: string
+  contactEmail?: string
+  contactPhone?: string
+  address?: string
+  isActive: boolean
+  categories: string[]
+  createdAt?: string
+  updatedAt?: string
+}
