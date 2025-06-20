@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Store, Phone, Mail, MapPin, Tags } from 'lucide-react';
 import { 
   getSuppliersRequest, 
   createSupplierRequest, 
