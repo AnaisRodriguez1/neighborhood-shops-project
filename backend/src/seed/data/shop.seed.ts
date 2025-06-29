@@ -1,10 +1,12 @@
 import { Types } from 'mongoose';
 import slugify from 'slugify';
 
+const ANAIS_ID = new Types.ObjectId('68455a40421a1863eccc418d')
+
 export const shops = [
   {
     _id: new Types.ObjectId('66523a50123a4567890abc01'),
-    ownerId: new Types.ObjectId('68453456ff372f0db4d4e76e'),
+    ownerId: ANAIS_ID,
     name: 'Verdulería El Honguito',
     slug: slugify('Verdulería El Honguito', { lower: true, strict: true }),    description: 'Frutas y verduras frescas directo del valle de Elqui y La Serena.',
     address: 'Av. Francisco de Aguirre 485, La Serena, Región de Coquimbo',
@@ -20,7 +22,8 @@ export const shops = [
     isActive: true,
   },  {
     _id: new Types.ObjectId('66523a50123a4567890abc02'),
-    ownerId: new Types.ObjectId('6833b8b13a4d7067a5b9ffb9'),    name: 'ElectroMundo Coquimbo',
+    ownerId: ANAIS_ID,
+    name: 'ElectroMundo Coquimbo',
     slug: slugify('ElectroMundo Coquimbo', { lower: true, strict: true }),
     description: 'Tecnología y electrodomésticos para el hogar en Coquimbo.',
     address: 'Av. Los Carrera 1456, Coquimbo, Región de Coquimbo',
@@ -37,7 +40,8 @@ export const shops = [
   },
   {
     _id: new Types.ObjectId('66523a50123a4567890abc03'),
-    ownerId: new Types.ObjectId('6833b8b13a4d7067a5b9ffba'),    name: 'Farmacia Vicuña',
+    ownerId: ANAIS_ID,
+    name: 'Farmacia Vicuña',
     slug: slugify('Farmacia Vicuña', { lower: true, strict: true }),
     description: 'Productos farmacéuticos y naturales del valle de Elqui.',
     address: 'Plaza de Armas 789, Vicuña, Región de Coquimbo',
