@@ -49,4 +49,36 @@ export class SuppliersController {
   remove(@Param('id') id: string) {
     return this.suppliersService.remove(id);
   }
+
+  @Get(':id/products')
+  @Auth(ValidRoles.locatario)
+  getSupplierProducts(@Param('id') id: string) {
+    return this.suppliersService.getSupplierProducts(id);
+  }
+
+  @Post(':id/add-to-shop/:shopId')
+  @Auth(ValidRoles.locatario)
+  addProductsToShop(
+    @Param('id') supplierId: string,
+    @Param('shopId') shopId: string,
+    @Body() body: { productIds: string[] }
+  ) {
+    return this.suppliersService.addProductsToShop(supplierId, shopId, body.productIds);
+  }
+
+  @Get(':id/shops')
+  @Auth(ValidRoles.locatario, ValidRoles.presidente)
+  getSupplierShops(@Param('id') id: string) {
+    return this.suppliersService.getSupplierShops(id);
+  }
+
+  @Patch(':id/relationship/:shopId')
+  @Auth(ValidRoles.locatario)
+  toggleSupplierRelationship(
+    @Param('id') supplierId: string,
+    @Param('shopId') shopId: string,
+    @Body() body: { isWorking: boolean }
+  ) {
+    return this.suppliersService.toggleSupplierRelationship(supplierId, shopId, body.isWorking);
+  }
 }

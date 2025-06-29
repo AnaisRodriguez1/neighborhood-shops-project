@@ -69,3 +69,27 @@ export const deleteSupplierRequest = async (id: string) => {
   const { data } = await API.delete(`/${id}`);
   return data;
 };
+
+// Get products from a supplier
+export const getSupplierProductsRequest = async (supplierId: string) => {
+  const { data } = await API.get(`/${supplierId}/products`);
+  return data;
+};
+
+// Add products from supplier to shop
+export const addSupplierProductsToShopRequest = async (supplierId: string, shopId: string, productIds: string[]) => {
+  const { data } = await API.post(`/${supplierId}/add-to-shop/${shopId}`, { productIds });
+  return data;
+};
+
+// Get shops working with a supplier
+export const getSupplierShopsRequest = async (supplierId: string) => {
+  const { data } = await API.get(`/${supplierId}/shops`);
+  return data;
+};
+
+// Start/stop working with a supplier
+export const toggleSupplierRelationshipRequest = async (supplierId: string, shopId: string, isWorking: boolean) => {
+  const { data } = await API.patch(`/${supplierId}/relationship/${shopId}`, { isWorking });
+  return data;
+};

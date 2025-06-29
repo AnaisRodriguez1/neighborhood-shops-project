@@ -13,6 +13,14 @@ export class Product extends Document{
     })
     shopId: Types.ObjectId;
 
+  @Prop({ 
+        type: Types.ObjectId, 
+        ref: 'Supplier',
+        required: false,
+        index: true
+    })
+    supplierId: Types.ObjectId;
+
   @Prop({ type: String,
     required: true,
         index: true, 

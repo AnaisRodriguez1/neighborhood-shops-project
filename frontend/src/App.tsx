@@ -35,6 +35,9 @@ import AdminShopsPage from "./pages/admin/AdminShopsPage"
 import AdminProductsPage from "./pages/admin/AdminProductsPage"
 import AdminUsersPage from "./pages/admin/AdminUsersPage"
 
+// Supplier Pages
+import { SuppliersPage } from "./pages/suppliers"
+
 function App() {
   return (
     <ThemeProvider>
@@ -105,6 +108,15 @@ function App() {
                   element={
                     <ProtectedRoute requiredRole="locatario">
                       <TodosLosPedidosPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/proveedores"
+                  element={
+                    <ProtectedRoute requiredRole="locatario">
+                      <SuppliersPage />
                     </ProtectedRoute>
                   }
                 />

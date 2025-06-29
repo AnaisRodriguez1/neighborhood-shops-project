@@ -297,19 +297,20 @@ const farmaciaProducts = [
   }
 ];
 
-// Combinar todos los productos
+// Combinar todos los productos de tiendas
 const allRawProducts = [
   ...verduleriaProducts,
   ...electromundoProducts, 
   ...farmaciaProducts
 ];
 
+// Exportar solo productos de tiendas (con shopId)
 export const products = allRawProducts.map(p => {
   const slug = p.name.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') 
-    .replace(/\s+/g, '-') 
-    .replace(/[^\w-]+/g, ''); 
-
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .trim();
+  
   return {
     name: p.name,
     price: Number(p.price),
@@ -319,6 +320,6 @@ export const products = allRawProducts.map(p => {
     stock: Number(p.stock),
     slug,
     images: [p.images], // Array de strings
-    shopId: p.shopId
+    shopId: (p as any).shopId
   };
 });

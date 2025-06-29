@@ -1,7 +1,7 @@
 "use client"
 
 import { useAuth } from "../context/AuthContext"
-import { Store, Package, Users, ShoppingCart, Settings, BarChart3, Plus, ClipboardList, Truck } from "lucide-react"
+import { Store, Package, Users, ShoppingCart, BarChart3, Plus, ClipboardList, Truck } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { getMyShopsRequest } from "../api/shopsApi"
@@ -166,31 +166,20 @@ export default function DashboardPage() {
                     </div>
                   </Link>
 
-                  {/* Sales Analytics */}
-                  <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                        <BarChart3 className="w-6 h-6 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Análisis de Ventas</h3>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm">Métricas y estadísticas</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Settings */}
-                  <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                        <Settings className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Configuración</h3>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm">Ajustes de cuenta</p>
+                  {/* Suppliers */}
+                  <Link to="/proveedores">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                          <Package className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Ir a Proveedores</h3>
+                          <p className="text-gray-600 dark:text-gray-300 text-sm">Gestionar proveedores y productos</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 </div>
 
                 {/* Shops Grid */}

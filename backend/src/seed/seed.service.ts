@@ -6,6 +6,7 @@ import { handleExceptions } from 'src/common/helpers/exception-handler.helper';
 
 import { Product } from 'src/products/entities/product.entity';
 import { products } from './data/products.seed';
+import { processedSupplierProducts } from './data/products-suppliers.seed';
 
 import { Shop } from 'src/shops/entities/shop.entity';
 import { shops } from './data/shop.seed';
@@ -41,19 +42,22 @@ export class SeedService {
       const supplierResult = await this.supplierModel.deleteMany({});
 
       // Insertar nuevos datos
-      const insertedProducts = await this.productModel.insertMany(products);
+      const insertedShopProducts = await this.productModel.insertMany(products);
+      const insertedSupplierProducts = await this.productModel.insertMany(processedSupplierProducts);
       const insertedShops = await this.shopModel.insertMany(shops);
       const insertedOrders = await this.orderModel.insertMany(orders);
       const insertedSuppliers = await this.supplierModel.insertMany(suppliers);
 
-      console.log('Productos insertados:', insertedProducts.length);
+      console.log('Productos de tiendas insertados:', insertedShopProducts.length);
+      console.log('Productos de proveedores insertados:', insertedSupplierProducts.length);
       console.log('Tiendas insertadas:', insertedShops.length);
       console.log('Pedidos insertados:', insertedOrders.length);
       console.log('Proveedores insertados:', insertedSuppliers.length);
 
       return {
         deletedProducts: productResult.deletedCount,
-        insertedProducts: insertedProducts.length,
+        insertedShopProducts: insertedShopProducts.length,
+        insertedSupplierProducts: insertedSupplierProducts.length,
         deletedShops: shopResult.deletedCount,
         insertedShops: insertedShops.length,
         deletedOrders: orderResult.deletedCount,

@@ -16,3 +16,6 @@ export * from './orders';
 
 // Delivery pages
 export * from './delivery';
+
+// Supplier pages
+export * from './suppliers';

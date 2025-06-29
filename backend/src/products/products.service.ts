@@ -56,14 +56,17 @@ export class ProductsService {
     } catch (error) {
         handleExceptions(error, 'el producto','crear');
     }
-  }  findAll(paginationDto : PaginationDto) {
+  }
+
+  async findAll(paginationDto : PaginationDto) {
 
     const { limit = this.defaultLimit, offset, page } = paginationDto;
 
     // Calculate offset: use provided offset or calculate from page
     const calculatedOffset = offset !== undefined ? offset : (page ? (page - 1) * limit : this.defaultOffset);
 
-    return this.productModel.find()
+    // Only return products that belong to shops (have shopId), not supplier products
+    return this.productModel.find({ shopId: { $exists: true } })
       .limit( limit )
       .skip( calculatedOffset )
       .sort({
