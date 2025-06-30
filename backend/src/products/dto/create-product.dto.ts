@@ -1,7 +1,12 @@
 import { Transform, Type } from "class-transformer";
-import { ArrayNotEmpty, IsArray, IsNumber, IsOptional, IsString, IsUrl, MaxLength, Min, MinLength } from "class-validator";
+import { ArrayNotEmpty, IsArray, IsMongoId, IsNumber, IsOptional, IsString, IsUrl, MaxLength, Min, MinLength, Matches } from "class-validator";
 
 export class CreateProductDto {
+
+    @IsOptional()
+    @IsString({ message: 'El ID de la tienda debe ser un texto.' })
+    @Matches(/^[0-9a-fA-F]{24}$/, { message: 'El ID de la tienda debe ser un ObjectId válido de MongoDB (24 caracteres hexadecimales).' })
+    shopId?: string;
 
     @IsString({ message: 'El nombre debe ser un texto.' })
     @MinLength(1, { message: 'El nombre es obligatorio.' })
@@ -49,9 +54,15 @@ export class CreateProductDto {
     stock?: number;
 
     @IsOptional()
-    @IsString({ message: 'La URL de la imagen debe ser un texto.' })
-    @IsUrl({}, { message: 'La URL de la imagen debe ser válida.' })
-    @MaxLength(500, { message: 'La URL de la imagen no puede exceder 500 caracteres.' })
-    images?: string;
+    @Transform(({ value }) =>
+        typeof value === 'string'
+          ? value.split(',').map(url => url.trim()).filter(url => url)
+          : value,
+      )
+    @IsArray({ message: 'Las imágenes deben ir separadas por comas.' })
+    @IsString({ each: true, message: 'Cada URL de imagen debe ser un texto.' })
+    @IsUrl({}, { each: true, message: 'Cada URL de imagen debe ser válida.' })
+    @MaxLength(500, { each: true, message: 'Cada URL de imagen no puede exceder 500 caracteres.' })
+    images?: string[];
 
 }

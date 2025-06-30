@@ -24,15 +24,21 @@ export class ProductsService {
     private readonly configService : ConfigService,
     
   ){
-    this.defaultLimit = this.configService.get<number>('defaultLimit') || 10;
+    this.defaultLimit = this.configService.get<number>('defaultLimit') || 50;
     this.defaultOffset = this.configService.get<number>('defaultOffset') || 0;
   }
 
   async create(createProductDto: CreateProductDto) {
     try {
+      // Convertir shopId a ObjectId si existe
+      const productDataToCreate: any = { ...createProductDto };
+      
+      if (createProductDto.shopId) {
+        productDataToCreate.shopId = new Types.ObjectId(createProductDto.shopId);
+      }
 
-      if(!createProductDto.slug){
-        createProductDto.slug = createProductDto.name
+      if(!productDataToCreate.slug){
+        productDataToCreate.slug = productDataToCreate.name
         .trim()
         .toLowerCase()
         .replaceAll(' ','_')
@@ -41,7 +47,7 @@ export class ProductsService {
         .replaceAll(".","")
       }
       else{
-        createProductDto.slug = createProductDto.name
+        productDataToCreate.slug = productDataToCreate.name
         .trim()
         .toLowerCase()
         .replaceAll(' ','_')
@@ -50,7 +56,7 @@ export class ProductsService {
         .replaceAll(".","")
       }
 
-      const product = await this.productModel.create(createProductDto);
+      const product = await this.productModel.create(productDataToCreate);
 
       return product;
     } catch (error) {
@@ -83,11 +89,16 @@ export class ProductsService {
     const { limit = this.defaultLimit, offset, page } = paginationDto;
     const calculatedOffset = offset !== undefined ? offset : (page ? (page - 1) * limit : this.defaultOffset);
 
-    return this.productModel.find({ shopId })
+    // Convert shopId string to ObjectId for proper matching
+    const shopObjectId = new Types.ObjectId(shopId);
+
+    const products = await this.productModel.find({ shopId: shopObjectId })
       .limit(limit)
       .skip(calculatedOffset)
       .sort({ name: 1 })
       .select('-createdAt -updatedAt');
+
+    return products;
   }
 
   async findOne(id: string) {
@@ -98,10 +109,6 @@ export class ProductsService {
     return product;
   }
   async update(id: string, updateProductDto: UpdateProductDto) {
-    console.log('=== PRODUCTS SERVICE UPDATE ===');
-    console.log('ID received:', id);
-    console.log('DTO received:', JSON.stringify(updateProductDto, null, 2));
-    
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException(`El ID '${id}' no es válido.`);
     }
@@ -111,11 +118,10 @@ export class ProductsService {
       throw new NotFoundException(`No se encontró un producto con ID '${id}'.`);
     }
 
-    console.log('Product found:', product.toObject());
-
     // ❌ Protege campos que NO deben ser actualizados
     delete (updateProductDto as any).slug;
-    delete (updateProductDto as any).shopId;    delete (updateProductDto as any).rating;
+    delete (updateProductDto as any).shopId;
+    delete (updateProductDto as any).rating;
     delete (updateProductDto as any).reviews;
     
     // ✅ Aplica campos actualizables
@@ -123,11 +129,8 @@ export class ProductsService {
 
     try {
       const result = await product.save(); // mantiene hooks como el de slug si cambia name
-      console.log('=== END PRODUCTS SERVICE UPDATE ===');
       return result;
     } catch (error) {
-      console.log('Error saving product:', error);
-      console.log('=== END PRODUCTS SERVICE UPDATE (ERROR) ===');
       if (error.code === 11000) {
         throw new BadRequestException(`Ya existe otro producto con datos similares.`);
       }

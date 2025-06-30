@@ -34,11 +34,6 @@ export class ProductsController {
   @Patch(':id')
   @Auth(ValidRoles.locatario, ValidRoles.presidente)
   update(@Param('id', ParseObjectIdPipe) id: string, @Body() updateProductDto: UpdateProductDto) {
-    console.log('=== UPDATE PRODUCT DEBUG ===');
-    console.log('Product ID:', id);
-    console.log('Update DTO:', JSON.stringify(updateProductDto, null, 2));
-    console.log('DTO type:', typeof updateProductDto);
-    console.log('============================');
     return this.productsService.update(id, updateProductDto);
   }
   @Delete(':id')

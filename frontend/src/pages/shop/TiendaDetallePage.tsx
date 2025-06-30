@@ -17,13 +17,18 @@ export default function TiendaDetallePage() {
   const [error, setError] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
-  const [productsPerPage] = useState(5) // Productos por página
+  const [productsPerPage] = useState(12)
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products')
 
   const { user, viewMode } = useAuth()
   const { addToCart } = useCart()
   const isCompradorView = viewMode?.current === "comprador"
-  const isOwner = user && shop && user.id === shop.ownerId
+  
+  // Corregir la comparación del propietario
+  const isOwner = user && shop && (
+    user.id === shop.ownerId || 
+    (typeof shop.ownerId === 'object' && user.id === (shop.ownerId as any)?.id)
+  )
 
   useEffect(() => {
     if (id) {
@@ -34,13 +39,13 @@ export default function TiendaDetallePage() {
   const loadShopAndProducts = async () => {
     try {
       setLoading(true)
+      
       const [shopResponse, productsResponse] = await Promise.all([
         apiService.getShop(id!), 
-        apiService.getProductsByShop(id!)
+        apiService.getProductsByShop(id!, 1, 50)
       ])
       
       setShop(shopResponse)
-      // Los productos ya vienen filtrados por tienda desde la API
       const shopProducts = productsResponse.data || productsResponse || []
       setProducts(shopProducts)
     } catch (err: any) {
@@ -53,7 +58,6 @@ export default function TiendaDetallePage() {
   const handleAddToCart = (product: Product) => {
     if (shop) {
       addToCart(product, shop)
-      // Aquí podrías mostrar una notificación de éxito
     }
   }
   const handleDeleteProduct = async (productId: string) => {
@@ -120,12 +124,12 @@ export default function TiendaDetallePage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Shop Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded">
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded select-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Shop Image */}
             <div className="lg:col-span-1">
-              <div className="h-64 relative rounded-xl overflow-hidden">
+              <div className="h-64 relative rounded-xl overflow-hidden select-none">
                 {/* Banner Image */}
                 {shop.images && shop.images[1] ? (
                   <img
@@ -172,10 +176,10 @@ export default function TiendaDetallePage() {
             </div>
 
             {/* Shop Info */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 select-none">
               <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{capitalizeWords(shop.name)}</h1>
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1 select-text">{capitalizeWords(shop.name)}</h1>
                   {shop.rating !== undefined && (
                     <div className="flex items-center space-x-2 mt-2">
                       <div className="flex items-center space-x-1">
@@ -188,8 +192,11 @@ export default function TiendaDetallePage() {
                   )}
                 </div>
 
-                {/* Action Buttons */}
-                {!isCompradorView && (isOwner || user?.role === "presidente") && (
+                {/* Action Buttons - Para propietarios de la tienda (locatarios) y presidentes */}
+                {!isCompradorView && (
+                  (isOwner && user?.role === "locatario") || 
+                  user?.role === "presidente"
+                ) && (
                   <div className="flex space-x-2">
                     <Link
                       to={`/tiendas/${shop.id}/editar`}
@@ -203,13 +210,13 @@ export default function TiendaDetallePage() {
                       className="flex items-center space-x-2 bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
                     >
                       <Plus className="w-4 h-4" />
-                      <span>Producto</span>
+                      <span>Nuevo Producto</span>
                     </Link>
                   </div>
                 )}
               </div>
 
-              <p className="text-gray-600 dark:text-gray-300 mb-6">{shop.description}</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-6 select-text">{shop.description}</p>
 
               {/* Shop Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -276,83 +283,6 @@ export default function TiendaDetallePage() {
         {/* Products Section - Show only when products tab is active or for non-owners */}
         {(!isOwner || activeTab === 'products') && (
           <>
-            {/* Dashboard-style header for shop owners */}
-            {isOwner && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Mis Productos</h2>
-                    <p className="text-gray-600 dark:text-gray-300 text-sm">
-                      {products.length} productos en total
-                      {products.filter(p => p.stock < 10).length > 0 && ` • ${products.filter(p => p.stock < 10).length} con stock bajo`}
-                    </p>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Link
-                      to={`/tiendas/${shop.id}/productos/nuevo`}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Nuevo Producto</span>
-                    </Link>
-                    <button
-                      onClick={() => setSelectedCategory("all")}
-                      className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
-                    >
-                      <Package className="w-4 h-4" />
-                      <span>Ver Todos</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Dashboard-style products grid (limited to 6) */}
-                {products.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {products.slice(0, 6).map((product) => (
-                      <div key={product.id} className="border dark:border-gray-700 rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-medium text-gray-900 dark:text-white">{product.name}</h3>
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            product.stock < 10 
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                              : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                          }`}>
-                            Stock: {product.stock}
-                          </span>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-2 line-clamp-2">
-                          {product.description}
-                        </p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                            {formatCurrency(product.price)}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                            {product.category}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No tienes productos</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-4">
-                      Comienza agregando productos a tu tienda para que los clientes puedan encontrarlos.
-                    </p>
-                    <Link
-                      to={`/tiendas/${shop.id}/productos/nuevo`}
-                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center space-x-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Agregar Primer Producto</span>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Regular products section for customers and full product view */}
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -474,7 +404,10 @@ export default function TiendaDetallePage() {
                         <div className="flex space-x-2">
                           {isCompradorView ? (
                             <button
-                              onClick={() => handleAddToCart(product)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddToCart(product);
+                              }}
                               disabled={product.stock === 0}
                               className="flex-1 flex items-center justify-center space-x-2 bg-blue-600 dark:bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
@@ -485,12 +418,16 @@ export default function TiendaDetallePage() {
                             <>
                               <Link
                                 to={`/productos/${product.id}/editar`}
+                                onClick={(e) => e.stopPropagation()}
                                 className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-center py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
                               >
                                 Editar
                               </Link>
                               <button
-                                onClick={() => handleDeleteProduct(product.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteProduct(product.id);
+                                }}
                                 className="bg-red-600 dark:bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -557,7 +494,10 @@ export default function TiendaDetallePage() {
                     ? "Esta tienda aún no tiene productos disponibles."
                     : "Comienza agregando productos a tu tienda."}
                 </p>
-                {!isCompradorView && (isOwner || user?.role === "presidente") && (
+                {!isCompradorView && (
+                  (isOwner && user?.role === "locatario") || 
+                  user?.role === "presidente"
+                ) && (
                   <Link
                     to={`/tiendas/${shop.id}/productos/nuevo`}
                     className="inline-flex items-center space-x-2 bg-blue-600 dark:bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
