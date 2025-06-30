@@ -100,7 +100,9 @@ export default function OrderDetailModal({
     
     try {
       setAssigningDelivery(true)
-      await onAssignDelivery(order.id, deliveryPersonId)
+      // Usar _id si está disponible, sino usar id
+      const orderId = order._id || order.id
+      await onAssignDelivery(orderId, deliveryPersonId)
     } catch (error: any) {
       console.error('Error assigning delivery person:', error)
       const errorMessage = error?.response?.data?.message || error?.message || 'Error al asignar el repartidor'
@@ -113,25 +115,195 @@ export default function OrderDetailModal({
 
   const handleStatusUpdate = (newStatus: string) => {
     if (onUpdateStatus) {
-      onUpdateStatus(order.id, newStatus)
+      // Usar _id si está disponible, sino usar id
+      const orderId = order._id || order.id
+      onUpdateStatus(orderId, newStatus)
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', { 
-      style: 'currency', 
-      currency: 'CLP' 
-    }).format(amount)
+  const formatCurrency = (amount: number | undefined | null): string => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '$0'
+    }
+    try {
+      return new Intl.NumberFormat('es-CL', { 
+        style: 'currency', 
+        currency: 'CLP' 
+      }).format(amount)
+    } catch (error) {
+      console.error('Error formatting currency:', amount, error)
+      return `$${amount}`
+    }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CL', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+  const formatDate = (dateString: string | undefined | null): string => {
+    if (!dateString) return 'Fecha no disponible'
+    
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        return 'Fecha inválida'
+      }
+      
+      return date.toLocaleDateString('es-CL', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error)
+      return 'Fecha inválida'
+    }
+  }
+
+  // Función para obtener el ID del pedido de manera robusta
+  const getOrderId = (): string => {
+    if (!order) return 'Sin ID'
+    
+    // Intentar diferentes campos de ID
+    const possibleIds = [
+      order.orderNumber,
+      order._id,
+      order.id,
+      (order as any).number,
+      (order as any).orderCode
+    ]
+    
+    for (const id of possibleIds) {
+      if (id && typeof id === 'string' && id.length > 0) {
+        return id.length > 8 ? id.slice(-8) : id
+      }
+    }
+    
+    return 'Sin ID'
+  }
+
+  // Función para obtener el nombre del cliente de manera robusta
+  const getCustomerName = (): string => {
+    if (!order) return 'Cliente desconocido'
+    
+    // 1. Prioridad: client.name (datos poblados del backend)
+    if (order.client?.name && order.client.name.trim()) {
+      return order.client.name.trim()
+    }
+    
+    // 2. Buscar en campos alternativos de customer
+    const orderAsAny = order as any
+    const possibleNames = [
+      orderAsAny.customer?.name,
+      orderAsAny.customerName,
+      orderAsAny.buyerName,
+      orderAsAny.userName,
+      orderAsAny.user?.name,
+      orderAsAny.customerInfo?.name,
+      orderAsAny.buyer?.name
+    ]
+    
+    for (const name of possibleNames) {
+      if (name && typeof name === 'string' && name.trim()) {
+        return name.trim()
+      }
+    }
+    
+    // 3. Si customerId es un objeto poblado, extraer nombre
+    if (order.customerId && typeof order.customerId === 'object') {
+      const customer = order.customerId as any
+      if (customer.name && customer.name.trim()) {
+        return customer.name.trim()
+      }
+      // Intentar otros campos en el objeto customer
+      if (customer.fullName) return customer.fullName.trim()
+      if (customer.firstName && customer.lastName) {
+        return `${customer.firstName} ${customer.lastName}`.trim()
+      }
+      if (customer.firstName) return customer.firstName.trim()
+    }
+    
+    // 4. Usar email como nombre si está disponible
+    if (order.client?.email) {
+      const emailName = order.client.email.split('@')[0]
+      return emailName.charAt(0).toUpperCase() + emailName.slice(1)
+    }
+    
+    // 5. Solo como último recurso, usar ID
+    if (order.customerId && typeof order.customerId === 'string' && order.customerId.length > 0) {
+      return `Cliente ${order.customerId.length > 8 ? order.customerId.slice(-8) : order.customerId}`
+    }
+    
+    // 6. Fallback final usando orderNumber o _id del pedido
+    const orderId = getOrderId()
+    if (orderId !== 'Sin ID') {
+      return `Cliente del Pedido ${orderId}`
+    }
+    
+    return 'Cliente sin identificar'
+  }
+
+  // Función para obtener información de la tienda de manera robusta
+  const getShopInfo = () => {
+    if (!order) return null
+    
+    // Si shopId es un objeto (populated)
+    if (typeof order.shopId === 'object' && order.shopId) {
+      const shop = order.shopId as any
+      return {
+        name: shop.name || shop.storeName || 'Tienda sin nombre',
+        id: shop._id || shop.id
+      }
+    }
+    
+    // Si tenemos shop separado
+    if (order.shop) {
+      return {
+        name: order.shop.name || 'Tienda sin nombre',
+        id: order.shop.id
+      }
+    }
+    
+    // Si shopId es string, crear info básica
+    if (typeof order.shopId === 'string' && order.shopId.length > 0) {
+      return {
+        name: `Tienda ${order.shopId.length > 8 ? order.shopId.slice(-8) : order.shopId}`,
+        id: order.shopId
+      }
+    }
+    
+    return null
+  }
+
+  // Función para obtener el número correcto de productos
+  const getItemsCount = (): number => {
+    if (!order || !order.items || !Array.isArray(order.items)) {
+      return 0
+    }
+    return order.items.length
+  }
+
+  // Función para obtener el nombre del producto de manera robusta
+  const getProductName = (item: any): string => {
+    const possibleNames = [
+      item.product?.name,
+      item.productName,
+      item.name,
+      item.product?.title,
+      item.title
+    ]
+    
+    for (const name of possibleNames) {
+      if (name && typeof name === 'string' && name.trim()) {
+        return name.trim()
+      }
+    }
+    
+    // Fallback con productId
+    if (item.productId) {
+      const productId = typeof item.productId === 'string' ? item.productId : item.productId._id || item.productId.id
+      return productId ? `Producto ${productId.length > 8 ? productId.slice(-8) : productId}` : 'Producto sin nombre'
+    }
+    
+    return 'Producto sin nombre'
   }
 
   return (
@@ -144,10 +316,10 @@ export default function OrderDetailModal({
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Pedido #{order.id?.slice(-8)}
+                Pedido #{getOrderId()}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {formatDate(order.orderDate)}
+                {formatDate(order.orderDate || order.createdAt)}
               </p>
             </div>
             <button
@@ -253,29 +425,36 @@ export default function OrderDetailModal({
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-900 dark:text-white mb-4 flex items-center">
                   <Package className="w-5 h-5 mr-2" />
-                  Productos ({order.items.length})
+                  Productos ({getItemsCount()})
                 </h4>
-                <div className="space-y-3">                  {order.items.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600 last:border-b-0">
-                      <div>
+                {getItemsCount() === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                    No hay productos en este pedido
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {order.items.map((item, index) => (
+                      <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600 last:border-b-0">
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {getProductName(item)}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Cantidad: {item.quantity || 0} × {formatCurrency(item.price || 0)}
+                          </p>
+                        </div>
                         <p className="font-medium text-gray-900 dark:text-white">
-                          {(item as any).product?.name || item.productName || `Producto ${item.productId}`}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Cantidad: {item.quantity} × {formatCurrency(item.price)}
+                          {formatCurrency((item.quantity || 0) * (item.price || 0))}
                         </p>
                       </div>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {formatCurrency(item.quantity * item.price)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-900 dark:text-white">Total:</span>
                     <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                      {formatCurrency(order.totalAmount)}
+                      {formatCurrency(order.totalAmount || order.total || 0)}
                     </span>
                   </div>
                 </div>
@@ -287,18 +466,24 @@ export default function OrderDetailModal({
                   <MapPin className="w-5 h-5 mr-2" />
                   Dirección de Entrega
                 </h4>
-                <div className="text-gray-600 dark:text-gray-300">
-                  <p>{order.deliveryAddress.street}</p>
-                  <p>{order.deliveryAddress.city}</p>
-                  {order.deliveryAddress.postalCode && (
-                    <p>CP: {order.deliveryAddress.postalCode}</p>
-                  )}
-                  {order.deliveryAddress.additionalInfo && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                      {order.deliveryAddress.additionalInfo}
-                    </p>
-                  )}
-                </div>
+                {order.deliveryAddress ? (
+                  <div className="text-gray-600 dark:text-gray-300">
+                    <p>{order.deliveryAddress.street || 'Dirección no especificada'}</p>
+                    <p>{order.deliveryAddress.city || 'Ciudad no especificada'}</p>
+                    {order.deliveryAddress.postalCode && (
+                      <p>CP: {order.deliveryAddress.postalCode}</p>
+                    )}
+                    {order.deliveryAddress.additionalInfo && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        {order.deliveryAddress.additionalInfo}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No hay información de dirección disponible
+                  </p>
+                )}
               </div>
 
               {/* Notes */}
@@ -320,43 +505,54 @@ export default function OrderDetailModal({
                   Cliente
                 </h4>
                 <div className="text-gray-600 dark:text-gray-300">
-                  {order.client ? (
-                    <>
-                      <p className="font-medium">{order.client.name}</p>
-                      <p className="text-sm">{order.client.email}</p>
-                    </>
-                  ) : (
-                    <p>ID: {order.customerId}</p>
+                  <p className="font-medium">{getCustomerName()}</p>
+                  {order.client?.email && (
+                    <p className="text-sm">{order.client.email}</p>
                   )}
                 </div>
               </div>
 
               {/* Shop Info */}
-              {typeof order.shopId === 'object' && (
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center">
-                    <Package className="w-5 h-5 mr-2" />
-                    Tienda
-                  </h4>
-                  <div className="text-gray-600 dark:text-gray-300">
-                    <p className="font-medium">{order.shopId.name}</p>
+              {(() => {
+                const shopInfo = getShopInfo()
+                return shopInfo ? (
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                      <Package className="w-5 h-5 mr-2" />
+                      Tienda
+                    </h4>
+                    <div className="text-gray-600 dark:text-gray-300">
+                      <p className="font-medium">{shopInfo.name}</p>
+                      {shopInfo.id && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          ID: {shopInfo.id.length > 8 ? shopInfo.id.slice(-8) : shopInfo.id}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : null
+              })()}
 
               {/* Delivery Person */}
               {order.deliveryPersonId && (
                 <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center">
                     <Truck className="w-5 h-5 mr-2" />
-                    Repartidor                  </h4>
+                    Repartidor
+                  </h4>
                   <div className="text-gray-600 dark:text-gray-300">
-                    <p>ID: {typeof order.deliveryPersonId === 'string' ? order.deliveryPersonId : order.deliveryPersonId?._id}</p>
-                    {typeof order.deliveryPersonId === 'object' && order.deliveryPersonId && (
+                    {typeof order.deliveryPersonId === 'object' && order.deliveryPersonId ? (
                       <>
-                        <p>Nombre: {order.deliveryPersonId.name}</p>
-                        <p>Email: {order.deliveryPersonId.email}</p>
+                        <p className="font-medium">{order.deliveryPersonId.name || 'Nombre no disponible'}</p>
+                        {order.deliveryPersonId.email && (
+                          <p className="text-sm">{order.deliveryPersonId.email}</p>
+                        )}
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          ID: {order.deliveryPersonId._id ? order.deliveryPersonId._id.slice(-8) : 'N/A'}
+                        </p>
                       </>
+                    ) : (
+                      <p>ID: {typeof order.deliveryPersonId === 'string' ? order.deliveryPersonId.slice(-8) : 'N/A'}</p>
                     )}
                   </div>
                 </div>

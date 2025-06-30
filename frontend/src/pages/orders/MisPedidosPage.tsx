@@ -36,6 +36,16 @@ export default function MisPedidosPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'date' | 'status' | 'total'>('date')
 
+  // Función para comparar órdenes de manera robusta
+  const isSameOrder = (order1: Order, order2: Order | any): boolean => {
+    if (!order1 || !order2) return false
+    
+    const id1 = order1._id || order1.id || order1.orderNumber
+    const id2 = order2._id || order2.id || order2.orderNumber || order2.orderId
+    
+    return id1 === id2
+  }
+
   useWebSocket({
     onOrderCreated: (order) => {
       console.log("Nuevo pedido creado:", order)
@@ -46,11 +56,12 @@ export default function MisPedidosPage() {
       console.log("Estado del pedido actualizado:", orderData)
       // Actualizar el pedido específico en la lista
       setOrders(prevOrders => 
-        prevOrders.map(order => 
-          order.id === orderData.orderId ? 
-            { ...order, status: orderData.status, estimatedDeliveryTime: orderData.estimatedDeliveryTime } : 
-            order
-        )
+        prevOrders.map(order => {
+          if (isSameOrder(order, orderData)) {
+            return { ...order, status: orderData.status, estimatedDeliveryTime: orderData.estimatedDeliveryTime }
+          }
+          return order
+        })
       )
       // Mostrar notificación
       if (orderData.orderNumber) {
@@ -98,22 +109,81 @@ export default function MisPedidosPage() {
       }
     })
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(amount)
+  // Funciones helper para manejar IDs y nombres de manera robusta
+  const getOrderId = (order: Order): string => {
+    if (!order) return 'Sin ID'
+    
+    const possibleIds = [
+      order.orderNumber,
+      order._id,
+      order.id,
+      (order as any).number,
+      (order as any).orderCode
+    ]
+    
+    for (const id of possibleIds) {
+      if (id && typeof id === 'string' && id.length > 0) {
+        return id.length > 8 ? id.slice(-8) : id
+      }
+    }
+    
+    return 'Sin ID'
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+  const getShopName = (order: Order): string => {
+    if (!order) return 'Tienda desconocida'
+    
+    if (typeof order.shopId === 'object' && order.shopId?.name) {
+      return order.shopId.name
+    }
+    
+    if (order.shop?.name) {
+      return order.shop.name
+    }
+    
+    if (typeof order.shopId === 'string' && order.shopId.length > 0) {
+      return `Tienda ${order.shopId.length > 8 ? order.shopId.slice(-8) : order.shopId}`
+    }
+    
+    return 'Tienda desconocida'
+  }
+
+  const formatCurrency = (amount: number | undefined | null): string => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '$0'
+    }
+    try {
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0
+      }).format(amount)
+    } catch (error) {
+      console.error('Error formatting currency:', amount, error)
+      return `$${amount}`
+    }
+  }
+
+  const formatDate = (dateString: string | undefined | null): string => {
+    if (!dateString) return 'Fecha no disponible'
+    
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        return 'Fecha inválida'
+      }
+      
+      return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error)
+      return 'Fecha inválida'
+    }
   }
 
   if (!user) {
@@ -215,11 +285,12 @@ export default function MisPedidosPage() {
                 <div key={order.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-4">
-                      <div>                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          Pedido #{order.id.slice(-6)}
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          Pedido #{getOrderId(order)}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-300">
-                          {formatDate(order.createdAt)} • {typeof order.shopId === 'object' ? order.shopId.name : 'Tienda'}
+                          {formatDate(order.createdAt)} • {getShopName(order)}
                         </p>
                       </div>
                     </div>
@@ -246,7 +317,10 @@ export default function MisPedidosPage() {
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Artículos</p>
                       <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {order.items.reduce((sum, item) => sum + item.quantity, 0)} artículos
+                        {order.items?.length > 0 
+                          ? order.items.reduce((sum, item) => sum + (item.quantity || 0), 0) 
+                          : 0
+                        } artículos
                       </p>
                     </div>
                     <div>
@@ -260,13 +334,13 @@ export default function MisPedidosPage() {
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                     <div className="flex items-center justify-between">
                       <div className="flex -space-x-2 overflow-hidden">
-                        {order.items.slice(0, 3).map((item, index) => (
-                          <div key={index} className="inline-block h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-600 ring-2 ring-white dark:ring-gray-800 flex items-center justify-center text-xs font-semibold text-gray-600 dark:text-gray-300">
-                            {item.quantity}
+                        {order.items?.length > 0 ? order.items.slice(0, 3).map((item, index) => (
+                          <div key={index} className="flex h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-600 ring-2 ring-white dark:ring-gray-800 items-center justify-center text-xs font-semibold text-gray-600 dark:text-gray-300">
+                            {item.quantity || 0}
                           </div>
-                        ))}
-                        {order.items.length > 3 && (
-                          <div className="inline-block h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 ring-2 ring-white dark:ring-gray-800 flex items-center justify-center text-xs font-semibold text-gray-600 dark:text-gray-300">
+                        )) : null}
+                        {order.items?.length > 3 && (
+                          <div className="flex h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 ring-2 ring-white dark:ring-gray-800 items-center justify-center text-xs font-semibold text-gray-600 dark:text-gray-300">
                             +{order.items.length - 3}
                           </div>
                         )}

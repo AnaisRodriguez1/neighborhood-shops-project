@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom"
 import { apiService } from "../../services/api"
 import { useAuth } from "../../context/AuthContext"
 import { useCart } from "../../context/CartContext"
-import { Star, MapPin, Truck, Package, Plus, Edit, Trash2, ShoppingCart, ChevronLeft, ChevronRight, ClipboardList } from "lucide-react"
+import { Star, MapPin, Truck, Package, Plus, Edit, Trash2, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react"
 import { Tienda, Product } from "../../types"
 import { capitalizeWords, formatCurrency } from "../../utils/format"
 import ShopOrdersManagement from "../../components/ShopOrdersManagement"
@@ -18,7 +18,6 @@ export default function TiendaDetallePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [productsPerPage] = useState(12)
-  const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products')
 
   const { user, viewMode } = useAuth()
   const { addToCart } = useCart()
@@ -239,51 +238,15 @@ export default function TiendaDetallePage() {
 
       {/* Products/Orders Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tab Navigation for Shop Owners */}
-        {isOwner && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-8">
-            <div className="border-b border-gray-200 dark:border-gray-700">
-              <nav className="flex space-x-8 px-6">
-                <button
-                  onClick={() => setActiveTab('products')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'products'
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <Package className="w-4 h-4" />
-                    <span>Productos</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setActiveTab('orders')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'orders'
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <ClipboardList className="w-4 h-4" />
-                    <span>Pedidos</span>
-                  </div>
-                </button>
-              </nav>
-            </div>
-          </div>
-        )}
 
         {/* Orders Management Section */}
-        {isOwner && activeTab === 'orders' && (
+        {isOwner && (
           <ShopOrdersManagement shop={shop} />
         )}
 
-        {/* Products Section - Show only when products tab is active or for non-owners */}
-        {(!isOwner || activeTab === 'products') && (
-          <>
-            {/* Regular products section for customers and full product view */}
+        {/* Products Section */}
+        <div>
+          {/* Regular products section for customers and full product view */}
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -507,8 +470,7 @@ export default function TiendaDetallePage() {
                 )}
               </div>
             )}
-          </>
-        )}
+        </div>
       </div>
     </div>
   )

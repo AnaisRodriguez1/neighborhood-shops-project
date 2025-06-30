@@ -48,12 +48,12 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
     },
     onOrderStatusUpdated: (updatedOrder: Order) => {
       setOrders(prev => prev.map(order => 
-        order.id === updatedOrder.id ? updatedOrder : order
+        isSameOrder(order, updatedOrder) ? updatedOrder : order
       ))
     },
     onOrderAssigned: (assignedOrder: Order) => {
       setOrders(prev => prev.map(order => 
-        order.id === assignedOrder.id ? assignedOrder : order
+        isSameOrder(order, assignedOrder) ? assignedOrder : order
       ))
     }
   })
@@ -63,11 +63,149 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
     joinShopRoom(shop.id)
   }, [shop.id, joinShopRoom])
 
+  // Función para comparar órdenes de manera robusta
+  const isSameOrder = (order1: Order, order2: Order): boolean => {
+    if (!order1 || !order2) return false
+    
+    const id1 = order1._id || order1.id || order1.orderNumber
+    const id2 = order2._id || order2.id || order2.orderNumber
+    
+    return id1 === id2
+  }
+
+  // Funciones helper robustas para manejar IDs y nombres
+  const getOrderId = (order: Order): string => {
+    if (!order) return 'Sin ID'
+    
+    const possibleIds = [
+      order.orderNumber,
+      order._id,
+      order.id,
+      (order as any).number,
+      (order as any).orderCode
+    ]
+    
+    for (const id of possibleIds) {
+      if (id && typeof id === 'string' && id.length > 0) {
+        return id.length > 8 ? id.slice(-8) : id
+      }
+    }
+    
+    return 'Sin ID'
+  }
+
+  const getCustomerName = (order: Order): string => {
+    if (!order) return 'Cliente desconocido'
+    
+    // 1. Prioridad: client.name (datos poblados del backend)
+    if (order.client?.name && order.client.name.trim()) {
+      return order.client.name.trim()
+    }
+    
+    // 2. Buscar en campos alternativos de customer
+    const orderAsAny = order as any
+    const possibleNames = [
+      orderAsAny.customer?.name,
+      orderAsAny.customerName,
+      orderAsAny.buyerName,
+      orderAsAny.userName,
+      orderAsAny.user?.name,
+      orderAsAny.customerInfo?.name,
+      orderAsAny.buyer?.name
+    ]
+    
+    for (const name of possibleNames) {
+      if (name && typeof name === 'string' && name.trim()) {
+        return name.trim()
+      }
+    }
+    
+    // 3. Si customerId es un objeto poblado, extraer nombre
+    if (order.customerId && typeof order.customerId === 'object') {
+      const customer = order.customerId as any
+      if (customer.name && customer.name.trim()) {
+        return customer.name.trim()
+      }
+      // Intentar otros campos en el objeto customer
+      if (customer.fullName) return customer.fullName.trim()
+      if (customer.firstName && customer.lastName) {
+        return `${customer.firstName} ${customer.lastName}`.trim()
+      }
+      if (customer.firstName) return customer.firstName.trim()
+    }
+    
+    // 4. Usar email como nombre si está disponible
+    if (order.client?.email) {
+      const emailName = order.client.email.split('@')[0]
+      return emailName.charAt(0).toUpperCase() + emailName.slice(1)
+    }
+    
+    // 5. Buscar en otros campos posibles del order
+    const possibleEmails = [
+      orderAsAny.customerEmail,
+      orderAsAny.email,
+      orderAsAny.buyer?.email,
+      orderAsAny.user?.email
+    ]
+    
+    for (const email of possibleEmails) {
+      if (email && typeof email === 'string' && email.includes('@')) {
+        const emailName = email.split('@')[0]
+        return emailName.charAt(0).toUpperCase() + emailName.slice(1)
+      }
+    }
+    
+    // 6. Como último recurso, usar ID del cliente (nunca del pedido)
+    if (order.customerId && typeof order.customerId === 'string' && order.customerId.length > 0) {
+      return `Cliente ${order.customerId.length > 8 ? order.customerId.slice(-8) : order.customerId}`
+    }
+    
+    // 7. Si customerId es objeto, intentar extraer su ID
+    if (order.customerId && typeof order.customerId === 'object') {
+      const customer = order.customerId as any
+      const customerId = customer._id || customer.id
+      if (customerId) {
+        return `Cliente ${customerId.length > 8 ? customerId.slice(-8) : customerId}`
+      }
+    }
+    
+    return 'Cliente sin identificar'
+  }
+
   const loadOrders = async () => {
     try {
       setLoading(true)
       setError(null)
       const response = await apiService.getOrdersByShop(shop.id)
+      console.log('📦 Órdenes cargadas para tienda:', shop.name, '- Total:', response?.length || 0)
+      
+      // Log información detallada del customer para debugging
+      if (response?.[0]) {
+        const order = response[0]
+        console.log('📦 Estructura de primera orden:', {
+          id: order.id,
+          _id: order._id,
+          orderNumber: order.orderNumber,
+          client: order.client,
+          customerId: order.customerId,
+          status: order.status,
+          items: order.items?.length,
+          totalAmount: order.totalAmount
+        })
+        
+        // Log específico para customer debugging
+        console.log('👤 Customer info debugging:', {
+          'client.name': order.client?.name,
+          'client.email': order.client?.email,
+          'customerId type': typeof order.customerId,
+          'customerId value': order.customerId,
+          'customer': (order as any).customer,
+          'customerName': (order as any).customerName,
+          'buyer': (order as any).buyer,
+          'user': (order as any).user
+        })
+      }
+      
       setOrders(response || [])
     } catch (err) {
       console.error('Error loading orders:', err)
@@ -88,21 +226,54 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', { 
-      style: 'currency', 
-      currency: 'CLP' 
-    }).format(amount)
+  const handleAssignDelivery = async (orderId: string, deliveryPersonId: string) => {
+    try {
+      await apiService.assignDeliveryPerson(orderId, deliveryPersonId)
+      // Order will be updated via WebSocket
+      setIsModalOpen(false)
+      alert('Repartidor asignado exitosamente')
+    } catch (err: any) {
+      console.error('Error assigning delivery person:', err)
+      const errorMessage = err?.response?.data?.message || err?.message || 'Error al asignar el repartidor'
+      alert(`Error: ${errorMessage}`)
+    }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CL', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+  const formatCurrency = (amount: number | undefined | null): string => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '$0'
+    }
+    try {
+      return new Intl.NumberFormat('es-CL', { 
+        style: 'currency', 
+        currency: 'CLP' 
+      }).format(amount)
+    } catch (error) {
+      console.error('Error formatting currency:', amount, error)
+      return `$${amount}`
+    }
+  }
+
+  const formatDate = (dateString: string | undefined | null): string => {
+    if (!dateString) return 'Fecha no disponible'
+    
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        return 'Fecha inválida'
+      }
+      
+      return date.toLocaleDateString('es-CL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error)
+      return 'Fecha inválida'
+    }
   }
 
   const filteredOrders = statusFilter === 'all' 
@@ -235,14 +406,14 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <tr key={order._id || order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          #{order.id?.slice(-8)}
+                          #{getOrderId(order)}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {order.items.length} producto{order.items.length !== 1 ? 's' : ''}
+                          {order.items?.length || 0} producto{(order.items?.length || 0) !== 1 ? 's' : ''}
                         </div>
                       </div>
                     </td>
@@ -252,17 +423,22 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
                       </span>
                     </td>                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 dark:text-white">
-                        {order.client?.name || `Cliente ${order.customerId.slice(-8)}`}
+                        {getCustomerName(order)}
                       </div>
+                      {order.client?.email && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {order.client.email}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {formatCurrency(order.totalAmount)}
+                        {formatCurrency(order.totalAmount || order.total)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 dark:text-white">
-                        {formatDate(order.orderDate)}
+                        {formatDate(order.orderDate || order.createdAt)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -294,7 +470,9 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
           setSelectedOrder(null)
         }}
         onUpdateStatus={handleStatusUpdate}
+        onAssignDelivery={handleAssignDelivery}
         canUpdateStatus={true}
+        canAssignDelivery={true}
       />
     </div>
   )

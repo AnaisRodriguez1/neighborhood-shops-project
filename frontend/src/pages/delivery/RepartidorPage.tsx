@@ -30,6 +30,16 @@ export default function RepartidorPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [updatingOrder, setUpdatingOrder] = useState<string | null>(null)
 
+  // Función para comparar órdenes de manera robusta
+  const isSameOrder = (order1: Order, order2: Order): boolean => {
+    if (!order1 || !order2) return false
+    
+    const id1 = order1._id || order1.id || order1.orderNumber
+    const id2 = order2._id || order2.id || order2.orderNumber
+    
+    return id1 === id2
+  }
+
   // WebSocket for real-time updates
   useWebSocket({
     onOrderAssigned: (orderData) => {
@@ -38,7 +48,7 @@ export default function RepartidorPage() {
     },
     onOrderStatusUpdated: (updatedOrder: Order) => {
       setOrders(prev => prev.map(order => 
-        order.id === updatedOrder.id ? updatedOrder : order
+        isSameOrder(order, updatedOrder) ? updatedOrder : order
       ))
     }
   })
@@ -67,8 +77,14 @@ export default function RepartidorPage() {
     }
   }
 
-  const handleDeliverOrder = async (orderId: string) => {
+  const handleDeliverOrder = async (order: Order) => {
     try {
+      const orderId = order._id || order.id || order.orderNumber
+      if (!orderId) {
+        alert('No se pudo identificar el pedido')
+        return
+      }
+      
       setUpdatingOrder(orderId)
       await apiService.updateOrderStatus(orderId, 'entregado')
       // Order will be updated via WebSocket
@@ -81,21 +97,122 @@ export default function RepartidorPage() {
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', { 
-      style: 'currency', 
-      currency: 'CLP' 
-    }).format(amount)
+  // Funciones helper para manejar IDs y nombres de manera robusta
+  const getOrderId = (order: Order): string => {
+    if (!order) return 'Sin ID'
+    
+    const possibleIds = [
+      order.orderNumber,
+      order._id,
+      order.id,
+      (order as any).number,
+      (order as any).orderCode
+    ]
+    
+    for (const id of possibleIds) {
+      if (id && typeof id === 'string' && id.length > 0) {
+        return id.length > 8 ? id.slice(-8) : id
+      }
+    }
+    
+    return 'Sin ID'
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CL', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+  const getCustomerName = (order: Order): string => {
+    if (!order) return 'Cliente desconocido'
+    
+    // 1. Prioridad: client.name (datos poblados del backend)
+    if (order.client?.name && order.client.name.trim()) {
+      return order.client.name.trim()
+    }
+    
+    // 2. Buscar en campos alternativos de customer
+    const orderAsAny = order as any
+    const possibleNames = [
+      orderAsAny.customer?.name,
+      orderAsAny.customerName,
+      orderAsAny.buyerName,
+      orderAsAny.userName,
+      orderAsAny.user?.name,
+      orderAsAny.customerInfo?.name,
+      orderAsAny.buyer?.name
+    ]
+    
+    for (const name of possibleNames) {
+      if (name && typeof name === 'string' && name.trim()) {
+        return name.trim()
+      }
+    }
+    
+    // 3. Si customerId es un objeto poblado, extraer nombre
+    if (order.customerId && typeof order.customerId === 'object') {
+      const customer = order.customerId as any
+      if (customer.name && customer.name.trim()) {
+        return customer.name.trim()
+      }
+      // Intentar otros campos en el objeto customer
+      if (customer.fullName) return customer.fullName.trim()
+      if (customer.firstName && customer.lastName) {
+        return `${customer.firstName} ${customer.lastName}`.trim()
+      }
+      if (customer.firstName) return customer.firstName.trim()
+    }
+    
+    // 4. Usar email como nombre si está disponible
+    if (order.client?.email) {
+      const emailName = order.client.email.split('@')[0]
+      return emailName.charAt(0).toUpperCase() + emailName.slice(1)
+    }
+    
+    // 5. Solo como último recurso, usar ID
+    if (order.customerId && typeof order.customerId === 'string' && order.customerId.length > 0) {
+      return `Cliente ${order.customerId.length > 8 ? order.customerId.slice(-8) : order.customerId}`
+    }
+    
+    // 6. Fallback final usando orderNumber o _id del pedido
+    const orderId = getOrderId(order)
+    if (orderId !== 'Sin ID') {
+      return `Cliente del Pedido ${orderId}`
+    }
+    
+    return 'Cliente sin identificar'
+  }
+
+  const formatCurrency = (amount: number | undefined | null): string => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '$0'
+    }
+    try {
+      return new Intl.NumberFormat('es-CL', { 
+        style: 'currency', 
+        currency: 'CLP' 
+      }).format(amount)
+    } catch (error) {
+      console.error('Error formatting currency:', amount, error)
+      return `$${amount}`
+    }
+  }
+
+  const formatDate = (dateString: string | undefined | null): string => {
+    if (!dateString) return 'Fecha no disponible'
+    
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        return 'Fecha inválida'
+      }
+      
+      return date.toLocaleDateString('es-CL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error)
+      return 'Fecha inválida'
+    }
   }
 
   const activeOrders = orders.filter(order => order.status === 'en_entrega')
@@ -228,10 +345,10 @@ export default function RepartidorPage() {
                       <div className="flex items-center space-x-4">
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            Pedido #{order.id?.slice(-8)}
+                            Pedido #{getOrderId(order)}
                           </h3>
                           <p className="text-sm text-gray-600 dark:text-gray-300">
-                            {formatDate(order.orderDate)} • {formatCurrency(order.totalAmount)}
+                            {formatDate(order.orderDate || order.createdAt)} • {formatCurrency(order.totalAmount || order.total)}
                           </p>
                         </div>
                       </div>
@@ -247,10 +364,11 @@ export default function RepartidorPage() {
                         <div>
                           <p className="font-medium text-gray-900 dark:text-white">Dirección de Entrega:</p>
                           <p className="text-gray-600 dark:text-gray-300">
-                            {order.deliveryAddress?.street}, {order.deliveryAddress?.city}
-                          </p>                          {(order.deliveryAddress as any)?.reference && (
+                            {order.deliveryAddress?.street || 'Dirección no especificada'}, {order.deliveryAddress?.city || 'Ciudad no especificada'}
+                          </p>
+                          {order.deliveryAddress?.additionalInfo && (
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                              Ref: {(order.deliveryAddress as any).reference}
+                              Ref: {order.deliveryAddress.additionalInfo}
                             </p>
                           )}
                         </div>
@@ -262,7 +380,7 @@ export default function RepartidorPage() {
                         <div>
                           <p className="font-medium text-gray-900 dark:text-white">Cliente:</p>
                           <p className="text-gray-600 dark:text-gray-300">
-                            {order.client ? order.client.name : `ID: ${order.customerId?.slice(-8)}`}
+                            {getCustomerName(order)}
                           </p>
                         </div>
                       </div>
@@ -271,14 +389,17 @@ export default function RepartidorPage() {
                     {/* Items Preview */}
                     <div className="mb-4">
                       <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                        Productos ({order.items.length}):
-                      </p>                      <div className="flex -space-x-2 overflow-hidden">
-                        {order.items.slice(0, 3).map((item, index) => (
+                        Productos ({order.items?.length || 0}):
+                      </p>
+                      <div className="flex -space-x-2 overflow-hidden">
+                        {order.items?.length > 0 ? order.items.slice(0, 3).map((item, index) => (
                           <div key={index} className="flex h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 ring-2 ring-white dark:ring-gray-800 items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                            {item.quantity}
+                            {item.quantity || 0}
                           </div>
-                        ))}
-                        {order.items.length > 3 && (
+                        )) : (
+                          <div className="text-sm text-gray-500 dark:text-gray-400">No hay productos</div>
+                        )}
+                        {order.items?.length > 3 && (
                           <div className="flex h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 ring-2 ring-white dark:ring-gray-800 items-center justify-center text-xs font-semibold text-gray-600 dark:text-gray-300">
                             +{order.items.length - 3}
                           </div>
@@ -298,11 +419,11 @@ export default function RepartidorPage() {
                         Ver Detalles
                       </button>
                       <button
-                        onClick={() => handleDeliverOrder(order.id)}
-                        disabled={updatingOrder === order.id}
+                        onClick={() => handleDeliverOrder(order)}
+                        disabled={updatingOrder === getOrderId(order)}
                         className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
                       >
-                        {updatingOrder === order.id ? (
+                        {updatingOrder === getOrderId(order) ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                             <span>Marcando...</span>
@@ -357,25 +478,25 @@ export default function RepartidorPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              #{order.id?.slice(-8)}
+                              #{getOrderId(order)}
                             </div>
                             <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {order.items.length} producto{order.items.length !== 1 ? 's' : ''}
+                              {order.items?.length || 0} producto{(order.items?.length || 0) !== 1 ? 's' : ''}
                             </div>
                           </div>
                         </td>                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 dark:text-white">
-                            {order.client?.name || `Cliente ${order.customerId?.slice(-8)}`}
+                            {getCustomerName(order)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {formatCurrency(order.totalAmount)}
+                            {formatCurrency(order.totalAmount || order.total)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 dark:text-white">
-                            {formatDate(order.actualDeliveryTime || order.orderDate)}
+                            {formatDate(order.actualDeliveryTime || order.orderDate || order.createdAt)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

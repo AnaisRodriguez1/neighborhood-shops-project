@@ -37,6 +37,16 @@ export default function TodosLosPedidosPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  // Función para comparar órdenes de manera robusta
+  const isSameOrder = (order1: Order, order2: Order): boolean => {
+    if (!order1 || !order2) return false
+    
+    const id1 = order1._id || order1.id || order1.orderNumber
+    const id2 = order2._id || order2.id || order2.orderNumber
+    
+    return id1 === id2
+  }
+
   // WebSocket for real-time updates
   useWebSocket({
     onOrderCreated: () => {
@@ -45,12 +55,12 @@ export default function TodosLosPedidosPage() {
     },
     onOrderStatusUpdated: (updatedOrder: Order) => {
       setOrders(prev => prev.map(order => 
-        order.id === updatedOrder.id ? updatedOrder : order
+        isSameOrder(order, updatedOrder) ? updatedOrder : order
       ))
     },
     onOrderAssigned: (assignedOrder: Order) => {
       setOrders(prev => prev.map(order => 
-        order.id === assignedOrder.id ? assignedOrder : order
+        isSameOrder(order, assignedOrder) ? assignedOrder : order
       ))
     }
   })
@@ -101,21 +111,140 @@ export default function TodosLosPedidosPage() {
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', { 
-      style: 'currency', 
-      currency: 'CLP' 
-    }).format(amount)
+  // Funciones helper para manejar IDs y nombres de manera robusta
+  const getOrderId = (order: Order): string => {
+    if (!order) return 'Sin ID'
+    
+    const possibleIds = [
+      order.orderNumber,
+      order._id,
+      order.id,
+      (order as any).number,
+      (order as any).orderCode
+    ]
+    
+    for (const id of possibleIds) {
+      if (id && typeof id === 'string' && id.length > 0) {
+        return id.length > 8 ? id.slice(-8) : id
+      }
+    }
+    
+    return 'Sin ID'
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CL', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+  const getCustomerName = (order: Order): string => {
+    if (!order) return 'Cliente desconocido'
+    
+    // 1. Prioridad: client.name (datos poblados del backend)
+    if (order.client?.name && order.client.name.trim()) {
+      return order.client.name.trim()
+    }
+    
+    // 2. Buscar en campos alternativos de customer
+    const orderAsAny = order as any
+    const possibleNames = [
+      orderAsAny.customer?.name,
+      orderAsAny.customerName,
+      orderAsAny.buyerName,
+      orderAsAny.userName,
+      orderAsAny.user?.name,
+      orderAsAny.customerInfo?.name,
+      orderAsAny.buyer?.name
+    ]
+    
+    for (const name of possibleNames) {
+      if (name && typeof name === 'string' && name.trim()) {
+        return name.trim()
+      }
+    }
+    
+    // 3. Si customerId es un objeto poblado, extraer nombre
+    if (order.customerId && typeof order.customerId === 'object') {
+      const customer = order.customerId as any
+      if (customer.name && customer.name.trim()) {
+        return customer.name.trim()
+      }
+      // Intentar otros campos en el objeto customer
+      if (customer.fullName) return customer.fullName.trim()
+      if (customer.firstName && customer.lastName) {
+        return `${customer.firstName} ${customer.lastName}`.trim()
+      }
+      if (customer.firstName) return customer.firstName.trim()
+    }
+    
+    // 4. Usar email como nombre si está disponible
+    if (order.client?.email) {
+      const emailName = order.client.email.split('@')[0]
+      return emailName.charAt(0).toUpperCase() + emailName.slice(1)
+    }
+    
+    // 5. Solo como último recurso, usar ID
+    if (order.customerId && typeof order.customerId === 'string' && order.customerId.length > 0) {
+      return `Cliente ${order.customerId.length > 8 ? order.customerId.slice(-8) : order.customerId}`
+    }
+    
+    // 6. Fallback final usando orderNumber o _id del pedido
+    const orderId = getOrderId(order)
+    if (orderId !== 'Sin ID') {
+      return `Cliente del Pedido ${orderId}`
+    }
+    
+    return 'Cliente sin identificar'
+  }
+
+  const getShopName = (order: Order): string => {
+    if (!order) return 'Tienda desconocida'
+    
+    if (typeof order.shopId === 'object' && order.shopId?.name) {
+      return order.shopId.name
+    }
+    
+    if (order.shop?.name) {
+      return order.shop.name
+    }
+    
+    if (typeof order.shopId === 'string' && order.shopId.length > 0) {
+      return `Tienda ${order.shopId.length > 8 ? order.shopId.slice(-8) : order.shopId}`
+    }
+    
+    return 'Tienda desconocida'
+  }
+
+  const formatCurrency = (amount: number | undefined | null): string => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '$0'
+    }
+    try {
+      return new Intl.NumberFormat('es-CL', { 
+        style: 'currency', 
+        currency: 'CLP' 
+      }).format(amount)
+    } catch (error) {
+      console.error('Error formatting currency:', amount, error)
+      return `$${amount}`
+    }
+  }
+
+  const formatDate = (dateString: string | undefined | null): string => {
+    if (!dateString) return 'Fecha no disponible'
+    
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        return 'Fecha inválida'
+      }
+      
+      return date.toLocaleDateString('es-CL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error)
+      return 'Fecha inválida'
+    }
   }
 
   const filteredOrders = statusFilter === 'all' 
@@ -292,11 +421,12 @@ export default function TodosLosPedidosPage() {
                       {filteredOrders.map((order) => (
                         <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div>                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                #{order.id ? order.id.slice(-8) : 'N/A'}
+                            <div>
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                #{getOrderId(order)}
                               </div>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
-                                {order.items.length} producto{order.items.length !== 1 ? 's' : ''}
+                                {order.items?.length || 0} producto{(order.items?.length || 0) !== 1 ? 's' : ''}
                               </div>
                             </div>
                           </td>
@@ -304,7 +434,7 @@ export default function TodosLosPedidosPage() {
                             <div className="flex items-center">
                               <Store className="w-4 h-4 text-gray-400 mr-2" />
                               <div className="text-sm text-gray-900 dark:text-white">
-                                {typeof order.shopId === 'object' ? order.shopId.name : 'Tienda'}
+                                {getShopName(order)}
                               </div>
                             </div>
                           </td>
@@ -313,7 +443,7 @@ export default function TodosLosPedidosPage() {
                             </span>
                           </td>                          <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900 dark:text-white">
-                              {order.client ? order.client.name : (order.customerId ? order.customerId.slice(-8) : 'N/A')}
+                              {getCustomerName(order)}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -336,12 +466,12 @@ export default function TodosLosPedidosPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {formatCurrency(order.totalAmount)}
+                              {formatCurrency(order.totalAmount || order.total)}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900 dark:text-white">
-                              {formatDate(order.orderDate)}
+                              {formatDate(order.orderDate || order.createdAt)}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
