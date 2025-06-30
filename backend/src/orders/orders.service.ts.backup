@@ -1159,5 +1159,381 @@ export class OrdersService {
       handleExceptions(error, 'el pedido', 'tomar');
     }
   }
-}
 
+  async findPendingOrdersByShopOwner(
+    user: AuthUser,
+    paginationDto: PaginationDto,
+  ) {
+    try {
+      const { limit = 10, offset, page } = paginationDto;
+      const calculatedOffset =
+        offset !== undefined ? offset : page ? (page - 1) * limit : 0;
+
+      // Encontrar las tiendas del usuario
+      const userObjectId = new Types.ObjectId(user._id.toString());
+      const userShops = await this.shopModel.find({ ownerId: userObjectId });
+
+      if (userShops.length === 0) {
+        return [];
+      }
+
+      const shopIds = userShops.map((shop) => shop._id as Types.ObjectId);
+
+      // Buscar pedidos pendientes solo en las tiendas del usuario
+      const query = {
+        shop: { $in: shopIds },
+        status: { $in: ['pendiente', 'confirmado', 'preparando', 'listo'] },
+      };
+
+      const orders = await this.orderModel
+        .find(query)
+        .populate('client', 'name email')
+        .populate('shop', 'name address')
+        .populate({
+          path: 'items.product',
+          select: 'name price images description stock',
+          match: { _id: { $exists: true } },
+        })
+        .populate('deliveryPerson', 'name email')
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(calculatedOffset)
+        .exec();
+
+      // Filtrar items con productos null/undefined después del populate
+      const cleanedOrders = orders.map((order) => {
+        const validItems = order.items.filter(
+          (item) => item.product && item.product !== null,
+        );
+        return {
+          ...order.toObject(),
+          items: validItems,
+        };
+      });
+
+      return cleanedOrders;
+    } catch (error) {
+      console.error('❌ Error finding pending orders:', error);
+      handleExceptions(error, 'los pedidos pendientes', 'obtener');
+    }
+  }
+  async findAllOrdersByShopOwner(user: AuthUser, paginationDto: PaginationDto) {
+    try {
+      const { limit = 50, offset, page } = paginationDto;
+      const calculatedOffset =
+        offset !== undefined ? offset : page ? (page - 1) * limit : 0;
+
+      // Encontrar las tiendas del usuario
+      const userObjectId = new Types.ObjectId(user._id.toString());
+      console.log(`🔍 Finding shops for user ID: ${userObjectId}`);
+      
+      const userShops = await this.shopModel.find({ ownerId: userObjectId });
+      console.log(`🏪 User shops found: ${userShops.length}`, userShops.map(s => ({ id: (s as any)._id.toString(), name: (s as any).name })));
+
+      if (userShops.length === 0) {
+        console.log('❌ No shops found for user');
+        return [];
+      }
+
+      const shopIds = userShops.map((shop) => shop._id as Types.ObjectId);
+      console.log(`📋 Shop IDs to query: ${shopIds.map(id => id.toString())}`);
+
+      // Buscar TODOS los pedidos (todos los status) de las tiendas del usuario
+      const query = {
+        shop: { $in: shopIds },
+      };
+
+      console.log(`🔍 Order query:`, query);
+
+      const orders = await this.orderModel
+        .find(query)
+        .populate('client', 'name email')
+        .populate('shop', 'name address')
+        .populate('items.product', 'name price images description stock')
+        .populate('deliveryPerson', 'name email deliveryInfo')
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(calculatedOffset)
+        .exec();
+
+      console.log(`📦 Orders found: ${orders.length}`);
+      orders.forEach(order => {
+        console.log(`  - Order ${order._id}: Shop ${order.shop?._id} (${(order.shop as any)?.name})`);
+      });
+
+      // Filtrar items con productos null/undefined después del populate
+      const cleanedOrders = orders.map((order) => {
+        const validItems = order.items.filter(
+          (item: any) => item.product && item.product !== null,
+        );
+        return {
+          ...order.toObject(),
+          items: validItems,
+        };
+      });
+
+      return cleanedOrders;
+    } catch (error) {
+      console.error('❌ Error finding all orders:', error);
+      handleExceptions(error, 'todos los pedidos', 'obtener');
+    }
+  }
+
+  private getStatusMessage(status: string): string {
+    const messages = {
+      pendiente: 'pendiente de confirmación',
+      confirmado: 'confirmado',
+      preparando: 'en preparación',
+      listo: 'listo para entrega',
+      en_entrega: 'en camino',
+      entregado: 'entregado',
+      cancelado: 'cancelado',
+    };
+    return messages[status] || status;
+  }  // Nuevo método para limpiar y validar referencias de productos
+  async fixProductReferencesInOrders() {
+    try {
+      // Buscar todos los pedidos
+      const allOrders = await this.orderModel.find({});
+
+      let fixedOrders = 0;
+      let removedItems = 0;
+
+      for (const order of allOrders) {
+        let orderNeedsUpdate = false;
+        const validItems: any[] = [];
+
+        for (const item of order.items) {
+          // Verificar si el producto existe
+          const productExists = await this.productModel.findById(item.product);
+
+          if (productExists) {
+            validItems.push(item);
+          } else {
+            removedItems++;
+            orderNeedsUpdate = true;
+          }
+        }
+
+        if (orderNeedsUpdate) {
+          if (validItems.length > 0) {
+            // Actualizar el pedido con solo los items válidos
+            await this.orderModel.updateOne(
+              { _id: order._id },
+              { $set: { items: validItems } },
+            );
+            fixedOrders++;
+          } else {
+            // Si no quedan items válidos, marcar el pedido como cancelado
+            await this.orderModel.updateOne(
+              { _id: order._id },
+              { $set: { status: 'cancelado', items: [] } },
+            );
+            fixedOrders++;
+          }
+        }
+      }
+
+      return { fixedOrders, removedItems };
+    } catch (error) {
+      console.error('❌ Error durante la limpieza de referencias:', error);
+      throw error;
+    }
+  }
+
+  // Método mejorado para obtener pedidos con productos validados
+  private async getOrdersWithValidatedProducts(query: any, options: any = {}) {
+    const { populate = [], ...otherOptions } = options;
+
+    // Populate estándar para productos con validación
+    const standardPopulate = [
+      'client',
+      'shop',
+      'deliveryPerson',
+      {
+        path: 'items.product',
+        select: 'name price images description stock',
+        // Solo incluir productos que realmente existen
+        match: { _id: { $exists: true } },
+      },
+    ];
+
+    const orders = await this.orderModel
+      .find(query)
+      .populate(standardPopulate)
+      .populate(populate)
+      .exec();
+
+    // Filtrar items con productos null/undefined después del populate
+    const cleanedOrders = orders.map((order) => {
+      const validItems = order.items.filter(
+        (item) => item.product && item.product !== null,
+      );
+      return {
+        ...order.toObject(),
+        items: validItems,
+      };
+    });
+
+    return cleanedOrders;
+  }
+
+  async updateDeliveryStatus(orderId: string, user: AuthUser) {
+    try {
+      const order = await this.orderModel
+        .findById(orderId)
+        .populate(['client', 'shop', 'deliveryPerson']);
+      
+      if (!order) {
+        throw new NotFoundException('Pedido no encontrado');
+      }
+
+      // Verificar que el usuario es el repartidor asignado a este pedido
+      if (!order.deliveryPerson || order.deliveryPerson._id.toString() !== user._id.toString()) {
+        throw new ForbiddenException('No estás autorizado para actualizar este pedido');
+      }
+
+      // Solo permitir cambiar de "en_entrega" a "entregado"
+      if (order.status !== 'en_entrega') {
+        throw new BadRequestException('El pedido debe estar en estado "en_entrega" para ser marcado como entregado');
+      }
+
+      order.status = 'entregado';
+      order.actualDeliveryTime = new Date();
+      await order.save();
+
+      // Repoblar la orden con todos los datos necesarios
+      await order.populate(['client', 'shop', 'deliveryPerson', 'items.product']);
+
+      // Notificar cambios vía WebSocket
+      if (order.client && order.client._id) {
+        try {
+          this.ordersGateway.emitToRoom(
+            `client-${order.client._id}`,
+            'order-status-updated',
+            {
+              order: order.toObject(),
+              orderId: order._id,
+              status: 'entregado',
+              message: 'Tu pedido ha sido entregado exitosamente',
+            },
+          );
+        } catch (wsError) {
+          console.warn('Error enviando notificación WebSocket al cliente:', wsError);
+        }
+      } else {
+        console.warn(`Pedido ${orderId} no tiene cliente válido para notificación de entrega`);
+      }
+
+      // Notificar a la tienda
+      if (order.shop && order.shop._id) {
+        try {
+          this.ordersGateway.emitToRoom(
+            `shop-${order.shop._id}`,
+            'order-status-updated',
+            {
+              order: order.toObject(),
+              orderId: order._id,
+              status: 'entregado',
+              message: 'Pedido entregado exitosamente',
+            },
+          );
+        } catch (wsError) {
+          console.warn('Error enviando notificación WebSocket a la tienda:', wsError);
+        }
+      } else {
+        console.warn(`Pedido ${orderId} no tiene tienda válida para notificación de entrega`);
+      }
+
+      return {
+        message: 'Pedido marcado como entregado exitosamente',
+        order,
+      };
+    } catch (error) {
+      handleExceptions(error, 'el pedido', 'marcar como entregado');
+    }
+  }
+
+  /**
+   * Find orders with invalid or missing client references
+   */
+  async findOrphanedOrders() {
+    try {
+      // Find orders where client populate fails or client is null
+      const allOrders = await this.orderModel
+        .find({})
+        .populate('client', 'name email')
+        .populate('shop', 'name')
+        .select('_id orderNumber client shop status createdAt totalAmount')
+        .lean();
+
+      const orphanedOrders = allOrders.filter(order => !order.client);
+      
+      console.log(`🔍 Total orders in database: ${allOrders.length}`);
+      console.log(`⚠️ Orphaned orders found: ${orphanedOrders.length}`);
+      
+      if (orphanedOrders.length > 0) {
+        orphanedOrders.forEach(order => {
+          console.log(`❌ Order ${order._id} (${order.orderNumber}) has no valid client`);
+        });
+      }
+
+      return {
+        totalOrders: allOrders.length,
+        orphanedOrders: orphanedOrders.length,
+        orphanedOrderDetails: orphanedOrders.map(order => ({
+          _id: order._id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          shop: (order.shop as any)?.name || 'Unknown shop',
+          createdAt: (order as any).createdAt,
+          totalAmount: order.totalAmount
+        }))
+      };
+    } catch (error) {
+      console.error('Error finding orphaned orders:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Attempt to fix orphaned orders by either removing them or assigning to a default client
+   */
+  async fixOrphanedOrders() {
+    try {
+      const diagnosis = await this.findOrphanedOrders();
+      
+      if (diagnosis.orphanedOrders === 0) {
+        return {
+          message: 'No orphaned orders found',
+          fixed: 0
+        };
+      }
+
+      // For now, let's just mark these orders as cancelled and add a note
+      // In a real scenario, you might want to assign them to a default user or handle differently
+      const orphanedOrderIds = diagnosis.orphanedOrderDetails.map(order => order._id);
+      
+      const result = await this.orderModel.updateMany(
+        { _id: { $in: orphanedOrderIds } },
+        { 
+          status: 'cancelado',
+          $set: { 
+            notes: 'Order cancelled due to missing client reference' 
+          }
+        }
+      );
+
+      console.log(`🔧 Fixed ${result.modifiedCount} orphaned orders by marking them as cancelled`);
+
+      return {
+        message: `Fixed ${result.modifiedCount} orphaned orders by marking them as cancelled`,
+        fixed: result.modifiedCount,
+        previousCount: diagnosis.orphanedOrders
+      };
+    } catch (error) {
+      console.error('Error fixing orphaned orders:', error);
+      throw error;
+    }
+  }
+}

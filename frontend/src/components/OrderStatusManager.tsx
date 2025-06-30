@@ -182,7 +182,7 @@ export default function OrderStatusManager({
       {!isDelivery && userRole === 'locatario' && currentStatus === 'listo' && (
         <div className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
           <p className="text-sm text-purple-700 dark:text-purple-300">
-            🚚 Asigna un repartidor y cambia el estado a "En Entrega" cuando el pedido esté siendo entregado.
+            🚚 El pedido está listo para entrega. Los repartidores disponibles pueden tomar este pedido.
           </p>
         </div>
       )}

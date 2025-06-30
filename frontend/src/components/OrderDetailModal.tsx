@@ -157,18 +157,35 @@ export default function OrderDetailModal({
       return emailName.charAt(0).toUpperCase() + emailName.slice(1)
     }
     
-    // 5. Solo como último recurso, usar ID
+    // 5. Usar dirección de entrega como identificación
+    if (order.deliveryAddress) {
+      const address = order.deliveryAddress as any // Usar any para acceder a propiedades dinámicas
+      if (address.street && (address.district || address.city)) {
+        return `${address.street}, ${address.district || address.city}`
+      }
+      if (address.district) {
+        return `Entrega en ${address.district}`
+      }
+      if (address.city) {
+        return `Entrega en ${address.city}`
+      }
+      if (address.street) {
+        return `Entrega en ${address.street}`
+      }
+    }
+    
+    // 6. Solo como último recurso, usar ID
     if (order.customerId && typeof order.customerId === 'string' && order.customerId.length > 0) {
       return `Cliente ${order.customerId.length > 8 ? order.customerId.slice(-8) : order.customerId}`
     }
     
-    // 6. Fallback final usando orderNumber o _id del pedido
+    // 7. Fallback final usando orderNumber o _id del pedido
     const orderId = getOrderId()
     if (orderId !== 'Sin ID') {
       return `Cliente del Pedido ${orderId}`
     }
     
-    return 'Cliente sin identificar'
+    return 'Cliente anónimo'
   }
 
   // Función para obtener información de la tienda de manera robusta

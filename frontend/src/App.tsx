@@ -25,7 +25,6 @@ import ShopOrdersPage from "./pages/shop/ShopOrdersPage"
 // Order Pages
 import CarritoPage from "./pages/orders/CarritoPage"
 import MisPedidosPage from "./pages/orders/MisPedidosPage"
-import TodosLosPedidosPage from "./pages/orders/TodosLosPedidosPage"
 
 // Delivery Pages
 import RepartidorPage from "./pages/delivery/RepartidorPage"
@@ -102,13 +101,6 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <MisPedidosPage />
-                    </ProtectedRoute>
-                  }
-                />                <Route
-                  path="/todos-los-pedidos"
-                  element={
-                    <ProtectedRoute requiredRole="locatario">
-                      <TodosLosPedidosPage />
                     </ProtectedRoute>
                   }
                 />

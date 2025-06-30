@@ -89,6 +89,23 @@ export class OrdersController {
     return this.ordersService.findAllOrdersByShopOwner(user, paginationDto);
   }
 
+  @Get('available-for-delivery')
+  @Auth(ValidRoles.repartidor)
+  findAvailableForDelivery(
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.ordersService.findAvailableForDelivery(paginationDto);
+  }
+
+  @Patch('take-order/:orderId')
+  @Auth(ValidRoles.repartidor)
+  takeOrder(
+    @Param('orderId', ParseObjectIdPipe) orderId: string,
+    @GetUser() user: AuthUser,
+  ) {
+    return this.ordersService.takeOrder(orderId, user);
+  }
+
   @Get(':id')
   @Auth()
   findOne(@Param('id', ParseObjectIdPipe) id: string) {

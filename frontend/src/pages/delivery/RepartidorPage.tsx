@@ -19,16 +19,21 @@ import OrderDetailModal from '../../components/OrderDetailModal'
 const statusColors = {
   en_entrega: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400',
   entregado: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
+  listo: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
 }
 
 export default function RepartidorPage() {
   const { user } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
+  const [availableOrders, setAvailableOrders] = useState<Order[]>([])
+  const [activeTab, setActiveTab] = useState<'my-orders' | 'available'>('my-orders')
   const [loading, setLoading] = useState(true)
+  const [loadingAvailable, setLoadingAvailable] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [updatingOrder, setUpdatingOrder] = useState<string | null>(null)
+  const [takingOrder, setTakingOrder] = useState<string | null>(null)
 
   // Función para comparar órdenes de manera robusta
   const isSameOrder = (order1: Order, order2: Order): boolean => {
@@ -45,17 +50,21 @@ export default function RepartidorPage() {
     onOrderAssigned: (orderData) => {
       console.log("Nueva orden asignada:", orderData)
       loadMyDeliveries()
+      loadAvailableOrders()
     },
     onOrderStatusUpdated: (updatedOrder: Order) => {
       setOrders(prev => prev.map(order => 
         isSameOrder(order, updatedOrder) ? updatedOrder : order
       ))
+      // Also refresh available orders as one might have been taken
+      loadAvailableOrders()
     }
   })
 
   useEffect(() => {
     if (user && user.role === 'repartidor') {
       loadMyDeliveries()
+      loadAvailableOrders()
     }
   }, [user])
   const loadMyDeliveries = async () => {
@@ -74,6 +83,49 @@ export default function RepartidorPage() {
       setError('Error al cargar las entregas asignadas')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadAvailableOrders = async () => {
+    try {
+      setLoadingAvailable(true)
+      setError(null)
+      console.log('📦 Loading available orders for delivery...')
+      
+      const response = await apiService.getAvailableOrdersForDelivery()
+      console.log('📦 Available orders response:', response)
+      
+      setAvailableOrders(response || [])
+    } catch (err) {
+      console.error('Error loading available orders:', err)
+      setError('Error al cargar los pedidos disponibles')
+    } finally {
+      setLoadingAvailable(false)
+    }
+  }
+
+  const handleTakeOrder = async (order: Order) => {
+    try {
+      const orderId = order._id || order.id || order.orderNumber
+      if (!orderId) {
+        alert('No se pudo identificar el pedido')
+        return
+      }
+      
+      setTakingOrder(orderId)
+      await apiService.takeOrder(orderId)
+      
+      // Refresh both lists
+      await loadMyDeliveries()
+      await loadAvailableOrders()
+      
+      alert('Pedido tomado exitosamente')
+      setActiveTab('my-orders') // Switch to my orders tab
+    } catch (err) {
+      console.error('Error taking order:', err)
+      alert('Error al tomar el pedido')
+    } finally {
+      setTakingOrder(null)
     }
   }
 
@@ -164,18 +216,35 @@ export default function RepartidorPage() {
       return emailName.charAt(0).toUpperCase() + emailName.slice(1)
     }
     
-    // 5. Solo como último recurso, usar ID
+    // 5. Usar dirección de entrega como identificación
+    if (order.deliveryAddress) {
+      const address = order.deliveryAddress as any
+      if (address.street && (address.district || address.city)) {
+        return `${address.street}, ${address.district || address.city}`
+      }
+      if (address.district) {
+        return `Entrega en ${address.district}`
+      }
+      if (address.city) {
+        return `Entrega en ${address.city}`
+      }
+      if (address.street) {
+        return `Entrega en ${address.street}`
+      }
+    }
+    
+    // 6. Solo como último recurso, usar ID
     if (order.customerId && typeof order.customerId === 'string' && order.customerId.length > 0) {
       return `Cliente ${order.customerId.length > 8 ? order.customerId.slice(-8) : order.customerId}`
     }
     
-    // 6. Fallback final usando orderNumber o _id del pedido
+    // 7. Fallback final usando orderNumber o _id del pedido
     const orderId = getOrderId(order)
     if (orderId !== 'Sin ID') {
       return `Cliente del Pedido ${orderId}`
     }
     
-    return 'Cliente sin identificar'
+    return 'Cliente anónimo'
   }
 
   const formatCurrency = (amount: number | undefined | null): string => {
@@ -256,31 +325,69 @@ export default function RepartidorPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
                 <Package className="w-8 h-8 mr-3 text-indigo-600 dark:text-indigo-400" />
-                Mis Entregas
+                Panel del Repartidor
               </h1>
               <p className="text-gray-600 dark:text-gray-300 mt-1">
-                Gestiona tus entregas asignadas - {user.name}
+                Gestiona tus entregas y toma pedidos disponibles - {user.name}
               </p>
             </div>
           </div>
           <button
-            onClick={loadMyDeliveries}
-            disabled={loading}
+            onClick={() => {
+              loadMyDeliveries()
+              loadAvailableOrders()
+            }}
+            disabled={loading || loadingAvailable}
             className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Package className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
+            <Package className={`w-4 h-4 mr-2 ${(loading || loadingAvailable) ? 'animate-spin' : ''}`} />
+            Actualizar Todo
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="mb-6">
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setActiveTab('my-orders')}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center space-x-2
+              ${activeTab === 'my-orders' ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+            >
+              <Package className="w-5 h-5" />
+              <span>Mis Pedidos</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('available')
+                loadAvailableOrders()
+              }}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center space-x-2
+              ${activeTab === 'available' ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+            >
+              <MapPin className="w-5 h-5" />
+              <span>Pedidos Disponibles</span>
+            </button>
+          </div>
+        </div>
+
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="flex items-center">
               <Package className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Entregas Activas</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{activeOrders.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <MapPin className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Disponibles</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{availableOrders.length}</p>
               </div>
             </div>
           </div>
@@ -331,7 +438,7 @@ export default function RepartidorPage() {
         )}
 
         {/* Active Deliveries */}
-        {!loading && !error && activeOrders.length > 0 && (
+        {activeTab === 'my-orders' && !loading && !error && activeOrders.length > 0 && (
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
               <Navigation className="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" />
@@ -444,7 +551,7 @@ export default function RepartidorPage() {
         )}
 
         {/* Completed Deliveries */}
-        {!loading && !error && completedOrders.length > 0 && (
+        {activeTab === 'my-orders' && !loading && !error && completedOrders.length > 0 && (
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
               <CheckCircle className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
@@ -519,16 +626,162 @@ export default function RepartidorPage() {
           </div>
         )}
 
-        {/* Empty State */}
-        {!loading && !error && orders.length === 0 && (
+        {/* Available Orders */}
+        {activeTab === 'available' && !loadingAvailable && !error && availableOrders.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <MapPin className="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" />
+              Pedidos Disponibles
+            </h2>
+            <div className="space-y-4">
+              {availableOrders.map((order) => (
+                <div key={order.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-l-4 border-indigo-500">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            Pedido #{getOrderId(order)}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            {formatDate(order.orderDate || order.createdAt)} • {formatCurrency(order.totalAmount || order.total)}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${statusColors.listo}`}>
+                        Listo para entrega
+                      </span>
+                    </div>
+
+                    {/* Delivery Address */}
+                    <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-4">
+                      <div className="flex items-start space-x-3">
+                        <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">Dirección de Entrega:</p>
+                          <p className="text-gray-600 dark:text-gray-300">
+                            {order.deliveryAddress?.street || 'Dirección no especificada'}, {order.deliveryAddress?.city || 'Ciudad no especificada'}
+                          </p>
+                          {order.deliveryAddress?.additionalInfo && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              Ref: {order.deliveryAddress.additionalInfo}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>                    {/* Customer Info */}
+                    <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-4">
+                      <div className="flex items-start space-x-3">
+                        <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">Cliente:</p>
+                          <p className="text-gray-600 dark:text-gray-300">
+                            {getCustomerName(order)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Items Preview */}
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                        Productos ({order.items?.length || 0}):
+                      </p>
+                      <div className="flex -space-x-2 overflow-hidden">
+                        {order.items?.length > 0 ? order.items.slice(0, 3).map((item, index) => (
+                          <div key={index} className="flex h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 ring-2 ring-white dark:ring-gray-800 items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                            {item.quantity || 0}
+                          </div>
+                        )) : (
+                          <div className="text-sm text-gray-500 dark:text-gray-400">No hay productos</div>
+                        )}
+                        {order.items?.length > 3 && (
+                          <div className="flex h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 ring-2 ring-white dark:ring-gray-800 items-center justify-center text-xs font-semibold text-gray-600 dark:text-gray-300">
+                            +{order.items.length - 3}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => {
+                          setSelectedOrder(order)
+                          setIsModalOpen(true)
+                        }}
+                        className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-center py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        Ver Detalles
+                      </button>
+                      <button
+                        onClick={() => handleTakeOrder(order)}
+                        disabled={takingOrder === getOrderId(order)}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                      >
+                        {takingOrder === getOrderId(order) ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Tomando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="w-4 h-4" />
+                            <span>Aceptar Pedido</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Loading State for Available Orders */}
+        {activeTab === 'available' && loadingAvailable && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-300">Cargando pedidos disponibles...</span>
+          </div>
+        )}
+
+        {/* Empty State for Available Orders */}
+        {activeTab === 'available' && !loadingAvailable && !error && availableOrders.length === 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
+            <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              No hay pedidos disponibles
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400">
+              Actualmente no hay pedidos listos para entrega. Los pedidos aparecerán aquí cuando los locatarios los marquen como "listos".
+            </p>
+            <button
+              onClick={loadAvailableOrders}
+              className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+            >
+              Actualizar
+            </button>
+          </div>
+        )}
+
+        {/* Empty State for My Orders */}
+        {activeTab === 'my-orders' && !loading && !error && orders.length === 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
             <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               No tienes entregas asignadas
             </h3>
             <p className="text-gray-500 dark:text-gray-400">
-              Las entregas asignadas aparecerán aquí cuando los locatarios te asignen pedidos.
+              Cuando tomes pedidos de la sección "Pedidos Disponibles", aparecerán aquí para su gestión.
             </p>
+            <button
+              onClick={() => setActiveTab('available')}
+              className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+            >
+              Ver Pedidos Disponibles
+            </button>
           </div>
         )}
 

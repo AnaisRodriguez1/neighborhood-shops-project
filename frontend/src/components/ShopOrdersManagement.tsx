@@ -160,7 +160,24 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
       return `Cliente ${order.customerId.length > 8 ? order.customerId.slice(-8) : order.customerId}`
     }
     
-    // 7. Si customerId es objeto, intentar extraer su ID
+    // 7. Usar dirección de entrega como identificación
+    if (order.deliveryAddress) {
+      const address = order.deliveryAddress as any
+      if (address.street && (address.district || address.city)) {
+        return `${address.street}, ${address.district || address.city}`
+      }
+      if (address.district) {
+        return `Entrega en ${address.district}`
+      }
+      if (address.city) {
+        return `Entrega en ${address.city}`
+      }
+      if (address.street) {
+        return `Entrega en ${address.street}`
+      }
+    }
+    
+    // 8. Si customerId es objeto, intentar extraer su ID
     if (order.customerId && typeof order.customerId === 'object') {
       const customer = order.customerId as any
       const customerId = customer._id || customer.id
@@ -169,7 +186,7 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
       }
     }
     
-    return 'Cliente sin identificar'
+    return 'Cliente anónimo'
   }
 
   const loadOrders = async () => {

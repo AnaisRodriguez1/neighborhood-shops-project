@@ -243,6 +243,23 @@ export const apiService = {
     return data
   },
 
+  // NEW: Get available orders for delivery (status: listo, no deliveryPerson)
+  getAvailableOrdersForDelivery: async (page?: number, limit?: number) => {
+    const params = new URLSearchParams()
+    if (page) params.append("page", page.toString())
+    if (limit) params.append("limit", limit.toString())
+    const query = params.toString() ? `?${params.toString()}` : ""
+
+    const { data } = await api.get(`/orders/available-for-delivery${query}`)
+    return data
+  },
+
+  // NEW: Take an available order for delivery
+  takeOrder: async (orderId: string) => {
+    const { data } = await api.patch(`/orders/take-order/${orderId}`)
+    return data
+  },
+
   // Specific endpoint for delivery persons to mark orders as delivered
   markAsDelivered: async (orderId: string) => {
     const { data } = await api.patch(`/orders/${orderId}/delivery-status`)

@@ -7,6 +7,9 @@
 			"command": "npm run start:dev",
 			"group": "build",
 			"isBackground": true,
+			"options": {
+				"cwd": "${workspaceFolder}/backend"
+			},
 			"problemMatcher": [
 				"$tsc"
 			]
