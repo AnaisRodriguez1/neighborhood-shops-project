@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Supplier } from './entities/supplier.entity';
 import { CreateSupplierDto, UpdateSupplierDto } from './dto';
 import { Product } from '../products/entities/product.entity';
@@ -93,43 +93,83 @@ export class SuppliersService {
     return products;
   }
 
-  async addProductsToShop(supplierId: string, shopId: string, productIds: string[]): Promise<any> {
+  async addProductsToShop(supplierId: string, shopId: string, products: { productId: string; quantity: number }[]): Promise<any> {
+    console.log('=== ADD PRODUCTS TO SHOP SERVICE ===');
+    console.log('Supplier ID:', supplierId);
+    console.log('Shop ID:', shopId);
+    console.log('Products to add:', products);
+
     // Verify supplier exists
     const supplier = await this.findOne(supplierId);
+    console.log('Supplier found:', supplier.name);
+    
+    // Convert shopId to ObjectId for database operations
+    const shopObjectId = new Types.ObjectId(shopId);
     
     // Verify shop exists
-    const shop = await this.shopModel.findById(shopId).exec();
+    const shop = await this.shopModel.findById(shopObjectId).exec();
     if (!shop) {
       throw new NotFoundException(`Shop with ID ${shopId} not found`);
     }
+    console.log('Shop found:', shop.name);
+
+    // Extract product IDs from the products array and convert to ObjectIds
+    const productObjectIds = products.map(p => new Types.ObjectId(p.productId));
+    console.log('Product IDs to add:', productObjectIds);
+
+    // Convert supplier ID to ObjectId for proper comparison
+    const supplierObjectId = new Types.ObjectId(supplierId);
+    console.log('Converted supplier ID to ObjectId:', supplierObjectId);
 
     // Get the supplier products
     const supplierProducts = await this.productModel
       .find({ 
-        _id: { $in: productIds },
-        supplierId: supplierId 
+        _id: { $in: productObjectIds },
+        supplierId: supplierObjectId 
       })
       .exec();
 
-    if (supplierProducts.length !== productIds.length) {
+    console.log('Found supplier products:', supplierProducts.length);
+    console.log('Expected product count:', productObjectIds.length);
+
+    if (supplierProducts.length === 0) {
+      // Check if products exist at all
+      const anyProducts = await this.productModel
+        .find({ _id: { $in: productObjectIds } })
+        .exec();
+      console.log('Products found (any supplier):', anyProducts.length);
+      
+      if (anyProducts.length > 0) {
+        console.log('Sample product supplierId:', anyProducts[0].supplierId);
+        console.log('Expected supplierId:', supplierObjectId);
+      }
+    }
+
+    if (supplierProducts.length !== productObjectIds.length) {
       throw new NotFoundException('Some products not found or do not belong to this supplier');
     }
 
-    // Create new products for the shop based on supplier products
-    const shopProducts = supplierProducts.map(product => ({
-      shopId: shopId,
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      tags: product.tags,
-      calories: product.calories,
-      stock: 0, // Start with 0 stock, shop owner will update
-      images: product.images,
-      slug: `${product.slug}-shop-${shopId}`, // Make slug unique for shop
-      // Keep reference to original supplier product
-      originalSupplierId: supplierId,
-      isActive: true,
-    }));
+    // Create new products for the shop based on supplier products with specified quantities
+    const shopProducts = supplierProducts.map(product => {
+      // Find the corresponding quantity for this product
+      const productInfo = products.find(p => p.productId === (product._id as any).toString());
+      const quantity = productInfo ? productInfo.quantity : 0;
+
+      return {
+        shopId: shopObjectId, // Use ObjectId instead of string
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        tags: product.tags,
+        calories: product.calories,
+        stock: quantity, // Use the specified quantity as initial stock
+        images: product.images,
+        slug: `${product.slug}-shop-${shopId}`, // Make slug unique for shop
+        // Keep reference to original supplier product
+        originalSupplierId: supplierObjectId,
+        isActive: true,
+      };
+    });
 
     const createdProducts = await this.productModel.insertMany(shopProducts);
     
@@ -140,9 +180,12 @@ export class SuppliersService {
   }
 
   async getSupplierShops(supplierId: string): Promise<Shop[]> {
+    // Convert supplier ID to ObjectId
+    const supplierObjectId = new Types.ObjectId(supplierId);
+    
     // Get shops that have products from this supplier
     const productsBySupplier = await this.productModel
-      .find({ supplierId: supplierId })
+      .find({ supplierId: supplierObjectId })
       .distinct('shopId')
       .exec();
 
@@ -152,11 +195,15 @@ export class SuppliersService {
   }
 
   async toggleSupplierRelationship(supplierId: string, shopId: string, isWorking: boolean): Promise<any> {
+    // Convert IDs to ObjectIds
+    const supplierObjectId = new Types.ObjectId(supplierId);
+    const shopObjectId = new Types.ObjectId(shopId);
+    
     // Verify supplier exists
     const supplier = await this.findOne(supplierId);
     
     // Verify shop exists
-    const shop = await this.shopModel.findById(shopId).exec();
+    const shop = await this.shopModel.findById(shopObjectId).exec();
     if (!shop) {
       throw new NotFoundException(`Shop with ID ${shopId} not found`);
     }
@@ -174,7 +221,7 @@ export class SuppliersService {
       // Stop working relationship - deactivate products from this supplier in the shop
       await this.productModel
         .updateMany(
-          { supplierId: supplierId, shopId: shopId },
+          { supplierId: supplierObjectId, shopId: shopObjectId },
           { isActive: false }
         )
         .exec();

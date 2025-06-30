@@ -12,6 +12,7 @@ import { SuppliersService } from './suppliers.service';
 import { CreateSupplierDto, UpdateSupplierDto } from './dto';
 import { Auth } from 'src/auth/decorators';
 import { ValidRoles } from 'src/auth/interfaces';
+import { Types } from 'mongoose';
 
 @Controller('suppliers')
 export class SuppliersController {
@@ -61,9 +62,18 @@ export class SuppliersController {
   addProductsToShop(
     @Param('id') supplierId: string,
     @Param('shopId') shopId: string,
-    @Body() body: { productIds: string[] }
+    @Body() body: { products: { productId: string; quantity: number }[] }
   ) {
-    return this.suppliersService.addProductsToShop(supplierId, shopId, body.productIds);
+    console.log('=== ADD PRODUCTS TO SHOP ROUTE HIT ===');
+    console.log('Supplier ID:', supplierId);
+    console.log('Shop ID:', shopId);
+    console.log('Request body:', JSON.stringify(body, null, 2));
+    console.log('========================================');
+    
+    // Convert shopId to ObjectId to validate it's a valid ObjectId
+    const shopObjectId = new Types.ObjectId(shopId);
+    
+    return this.suppliersService.addProductsToShop(supplierId, shopObjectId.toString(), body.products);
   }
 
   @Get(':id/shops')
@@ -79,6 +89,9 @@ export class SuppliersController {
     @Param('shopId') shopId: string,
     @Body() body: { isWorking: boolean }
   ) {
-    return this.suppliersService.toggleSupplierRelationship(supplierId, shopId, body.isWorking);
+    // Convert shopId to ObjectId to validate it's a valid ObjectId
+    const shopObjectId = new Types.ObjectId(shopId);
+    
+    return this.suppliersService.toggleSupplierRelationship(supplierId, shopObjectId.toString(), body.isWorking);
   }
 }

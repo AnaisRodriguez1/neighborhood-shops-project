@@ -1,16 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   getSuppliersRequest, 
-  getSupplierProductsRequest, 
-  addSupplierProductsToShopRequest,
-  toggleSupplierRelationshipRequest
+  getSupplierProductsRequest,
+  addProductsToShop
 } from '../../api/suppliersApi';
 import { getMyShopsRequest } from '../../api/shopsApi';
 import { 
   Package, 
   ShoppingCart, 
-  Plus, 
-  Check, 
   Search,
   Filter,
   ArrowLeft
@@ -30,7 +27,8 @@ interface Supplier {
 }
 
 interface Product {
-  _id: string;
+  _id?: string;
+  id?: string;
   name: string;
   description: string;
   price: number;
@@ -40,8 +38,13 @@ interface Product {
   supplierId: string;
 }
 
+interface ProductQuantity {
+  [productId: string]: number;
+}
+
 interface Shop {
-  _id: string;
+  _id?: string;
+  id?: string;
   name: string;
 }
 
@@ -51,15 +54,26 @@ export default function SuppliersPage() {
   const [supplierProducts, setSupplierProducts] = useState<Product[]>([]);
   const [userShops, setUserShops] = useState<Shop[]>([]);
   const [selectedShop, setSelectedShop] = useState<string>('');
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [productQuantities, setProductQuantities] = useState<ProductQuantity>({});
   const [loading, setLoading] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [isAddingToShop, setIsAddingToShop] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   
   // Helper function to get supplier ID
   const getSupplierId = (supplier: Supplier): string => {
     return supplier._id || supplier.id || '';
+  };
+  
+  // Helper function to get product ID
+  const getProductId = (product: any, index: number): string => {
+    return product._id || product.id || product.productId || `temp-id-${index}-${product.name?.replace(/\s+/g, '-').toLowerCase()}`;
+  };
+  
+  // Helper function to get shop ID
+  const getShopId = (shop: any): string => {
+    return shop._id || shop.id || shop.name;
   };
   
   useEffect(() => {
@@ -71,8 +85,6 @@ export default function SuppliersPage() {
     try {
       setLoading(true);
       const data = await getSuppliersRequest();
-      console.log('🏪 Loaded suppliers:', data);
-      console.log('🏪 First supplier structure:', data?.[0]);
       setSuppliers(data || []);
     } catch (error) {
       console.error('Error loading suppliers:', error);
@@ -86,7 +98,8 @@ export default function SuppliersPage() {
       const shops = await getMyShopsRequest();
       setUserShops(shops || []);
       if (shops && shops.length > 0) {
-        setSelectedShop(shops[0]._id);
+        const firstShopId = getShopId(shops[0]);
+        setSelectedShop(firstShopId);
       }
     } catch (error) {
       console.error('Error loading user shops:', error);
@@ -95,14 +108,11 @@ export default function SuppliersPage() {
 
   const loadSupplierProducts = async (supplierId: string) => {
     try {
-      console.log('🔍 Loading products for supplier:', supplierId);
       setLoadingProducts(true);
       const products = await getSupplierProductsRequest(supplierId);
-      console.log('📦 Received products:', products);
-      console.log('📦 Products count:', products?.length || 0);
       setSupplierProducts(products || []);
     } catch (error) {
-      console.error('❌ Error loading supplier products:', error);
+      console.error('Error loading supplier products:', error);
       setSupplierProducts([]);
     } finally {
       setLoadingProducts(false);
@@ -111,53 +121,90 @@ export default function SuppliersPage() {
 
   const handleSupplierSelect = (supplier: Supplier) => {
     const supplierId = getSupplierId(supplier);
-    console.log('🏪 Selecting supplier:', supplier.name, 'ID:', supplierId);
     setSelectedSupplier(supplier);
-    setSelectedProducts([]);
+    setSelectedCategory('');
+    setProductQuantities({}); // Reset quantities when changing supplier
     loadSupplierProducts(supplierId);
   };
 
-  const handleProductToggle = (productId: string) => {
-    setSelectedProducts(prev => 
-      prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
-  };
+  const updateProductQuantity = useCallback((productId: string, change: number) => {
+    setProductQuantities(prev => {
+      const currentQuantity = prev[productId] || 0;
+      const newQuantity = Math.max(0, currentQuantity + change);
+      
+      // Si la nueva cantidad es 0, eliminar el producto del objeto
+      if (newQuantity === 0) {
+        const { [productId]: removed, ...rest } = prev;
+        return rest;
+      }
+      
+      // Actualizar la cantidad
+      return {
+        ...prev,
+        [productId]: newQuantity
+      };
+    });
+  }, []);
 
   const handleAddProductsToShop = async () => {
+    // Get products with quantities > 0
+    const selectedProducts = Object.keys(productQuantities).filter(id => productQuantities[id] > 0);
+    
     if (!selectedSupplier || !selectedShop || selectedProducts.length === 0) {
-      alert('Por favor selecciona un proveedor, una tienda y al menos un producto');
+      alert('Por favor selecciona una tienda y añade al menos un producto al carrito (cantidad > 0)');
       return;
     }
 
     try {
+      setIsAddingToShop(true);
+      
+      // Debug: Check authentication
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Error: No hay sesión activa. Por favor inicia sesión.');
+        return;
+      }
+      console.log('Token exists:', !!token);
+      
       const supplierId = getSupplierId(selectedSupplier);
-      const response = await addSupplierProductsToShopRequest(supplierId, selectedShop, selectedProducts);
-      console.log('✅ Productos añadidos exitosamente:', response);
-      alert(`¡Éxito! ${selectedProducts.length} producto(s) de ${selectedSupplier.name} añadido(s) a tu tienda. Ahora puedes gestionarlos desde tu inventario.`);
-      setSelectedProducts([]);
-      // Opcional: volver a la lista de proveedores
-      // setSelectedSupplier(null);
-    } catch (error) {
-      console.error('❌ Error adding products to shop:', error);
-      alert('Error al añadir productos a la tienda. Por favor intenta de nuevo.');
-    }
-  };
-
-  const handleToggleSupplierRelationship = async (supplierId: string, isWorking: boolean) => {
-    if (!selectedShop) {
-      alert('Por favor selecciona una tienda');
-      return;
-    }
-
-    try {
-      await toggleSupplierRelationshipRequest(supplierId, selectedShop, isWorking);
-      alert(`${isWorking ? 'Comenzaste' : 'Dejaste'} de trabajar con este proveedor`);
-      loadSuppliers();
-    } catch (error) {
-      console.error('Error toggling supplier relationship:', error);
-      alert('Error al actualizar relación con proveedor');
+      const shopId = selectedShop; // selectedShop is already a string ID
+      
+      console.log('Making request to:', `http://localhost:8080/api/suppliers/${supplierId}/add-to-shop/${shopId}`);
+      
+      // Prepare the request body in the format expected by the backend
+      const requestBody = {
+        products: selectedProducts.map(productId => {
+          const product = supplierProducts.find((p: any) => getProductId(p, supplierProducts.indexOf(p)) === productId);
+          return {
+            productId: product?._id || product?.id || productId,
+            quantity: productQuantities[productId]
+          };
+        })
+      };
+      
+      console.log('Request body:', JSON.stringify(requestBody, null, 2));
+      
+      // Make API call to add products to shop
+      await addProductsToShop(supplierId, shopId, requestBody);
+      
+      const totalUnits = Object.values(productQuantities).reduce((sum, qty) => sum + qty, 0);
+      const selectedShopObj = userShops.find(shop => getShopId(shop) === selectedShop);
+      const shopName = selectedShopObj?.name || 'la tienda seleccionada';
+      alert(`¡Éxito! ${totalUnits} unidad(es) de ${selectedProducts.length} producto(s) diferentes de ${selectedSupplier.name} añadido(s) a ${shopName}. Ahora puedes gestionarlos desde tu inventario.`);
+      setProductQuantities({});
+    } catch (error: any) {
+      // Display user-friendly error messages
+      if (error.response?.status === 404) {
+        alert('Error: Algunos productos no se encontraron o no pertenecen a este proveedor');
+      } else if (error.response?.status === 400) {
+        alert('Error: Datos inválidos. Verifica que los productos y el negocio sean correctos');
+      } else {
+        alert('Error al agregar productos al negocio. Inténtalo de nuevo');
+      }
+      
+      console.error('Error adding products to shop:', error);
+    } finally {
+      setIsAddingToShop(false);
     }
   };
 
@@ -195,26 +242,6 @@ export default function SuppliersPage() {
                 Encuentra proveedores y añade sus productos a tus tiendas
               </p>
             </div>
-
-            {/* Shop Selection */}
-            {userShops.length > 1 && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Seleccionar Tienda
-                </h3>
-                <select
-                  value={selectedShop}
-                  onChange={(e) => setSelectedShop(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                >
-                  {userShops.map((shop) => (
-                    <option key={shop._id} value={shop._id}>
-                      {capitalizeWords(shop.name)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             {/* Filters */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
@@ -296,7 +323,7 @@ export default function SuppliersPage() {
                     <div className="flex flex-wrap gap-1">
                       {supplier.categories.map((category, index) => (
                         <span
-                          key={index}
+                          key={`${getSupplierId(supplier)}-${category}-${index}`}
                           className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full"
                         >
                           {capitalizeWords(category)}
@@ -312,15 +339,6 @@ export default function SuppliersPage() {
                     >
                       Ver Productos
                     </button>
-                    {selectedShop && (
-                      <button
-                        onClick={() => handleToggleSupplierRelationship(getSupplierId(supplier), true)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                        title="Trabajar con este proveedor"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    )}
                   </div>
                 </div>
               ))}
@@ -361,123 +379,224 @@ export default function SuppliersPage() {
               </p>
             </div>
 
-            {/* Action Bar */}
-            {selectedProducts.length > 0 && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <span className="text-blue-800 dark:text-blue-200 font-medium">
-                      {selectedProducts.length} producto(s) seleccionado(s)
-                    </span>
-                    {userShops.length > 1 && (
-                      <select
-                        value={selectedShop}
-                        onChange={(e) => setSelectedShop(e.target.value)}
-                        className="px-3 py-1 border border-blue-300 dark:border-blue-600 rounded bg-white dark:bg-gray-700 text-sm"
+            {/* Shop Selection and Action Bar */}
+            <div className="mb-6 space-y-4">
+              {/* Shop Selection */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                  Seleccionar Tienda de Destino
+                </h3>
+                <select
+                  value={selectedShop}
+                  onChange={(e) => setSelectedShop(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">Selecciona una tienda...</option>
+                  {userShops.map((shop) => {
+                    const shopId = getShopId(shop);
+                    return (
+                      <option key={shopId} value={shopId}>
+                        {capitalizeWords(shop.name)}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* Action Bar */}
+              {Object.keys(productQuantities).length > 0 && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <span className="text-green-800 dark:text-green-200 font-medium">
+                        🛒 {Object.keys(productQuantities).length} producto(s) en el carrito
+                      </span>
+                      <span className="text-green-600 dark:text-green-300 text-sm">
+                        Total unidades: {Object.values(productQuantities).reduce((sum, qty) => sum + qty, 0)}
+                      </span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setProductQuantities({})}
+                        className="px-4 py-2 text-green-600 dark:text-green-400 border border-green-300 dark:border-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors"
                       >
-                        {userShops.map((shop) => (
-                          <option key={shop._id} value={shop._id}>
-                            {capitalizeWords(shop.name)}
-                          </option>
-                        ))}
-                      </select>
-                    )}
+                        Vaciar Carrito
+                      </button>
+                      <button
+                        onClick={handleAddProductsToShop}
+                        disabled={!selectedShop || isAddingToShop}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center space-x-2"
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        <span>{isAddingToShop ? 'Añadiendo...' : 'Añadir a Tienda'}</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex space-x-2">
+                </div>
+              )}
+            </div>
+
+            {/* Content Layout with Filter and Products */}
+            <div className="flex gap-6">
+              {/* Category Filter Box */}
+              <div className="w-64 flex-shrink-0">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sticky top-4">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                    <Filter className="w-4 h-4 mr-2" />
+                    Filtrar por Categoría
+                  </h3>
+                  
+                  <div className="space-y-2">
                     <button
-                      onClick={() => setSelectedProducts([])}
-                      className="px-4 py-2 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                      onClick={() => setSelectedCategory('')}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                        selectedCategory === ''
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}
                     >
-                      Cancelar
+                      Todas las categorías
                     </button>
-                    <button
-                      onClick={handleAddProductsToShop}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center space-x-2"
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      <span>Añadir a Tienda</span>
-                    </button>
+                    
+                    {[...new Set(supplierProducts.flatMap(p => p.tags))].map((category) => (
+                      <button
+                        key={category}
+                        onClick={() => setSelectedCategory(category)}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                          selectedCategory === category
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        {capitalizeWords(category)}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
-            )}
 
-            {/* Products Grid */}
-            {loadingProducts ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">Cargando productos...</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {supplierProducts.map((product) => (
-                  <div
-                    key={product._id}
-                    className={`bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all cursor-pointer ${
-                      selectedProducts.includes(product._id) 
-                        ? 'ring-2 ring-blue-500 transform scale-105' 
-                        : ''
-                    }`}
-                    onClick={() => handleProductToggle(product._id)}
-                  >
-                    {/* Product Image */}
-                    <div className="relative h-48 bg-gray-200 dark:bg-gray-700">
-                      {product.images && product.images.length > 0 ? (
-                        <img
-                          src={product.images[0]}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-12 h-12 text-gray-400" />
-                        </div>
-                      )}
-                      {selectedProducts.includes(product._id) && (
-                        <div className="absolute top-2 right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Product Info */}
-                    <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-1">
-                        {capitalizeWords(product.name)}
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
-                        {product.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                          ${product.price.toLocaleString()}
-                        </span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          Stock: {product.stock}
-                        </span>
-                      </div>
-                      <div className="mt-2">
-                        <span className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
-                          {product.tags.length > 0 ? capitalizeWords(product.tags[0]) : 'Sin categoría'}
-                        </span>
-                      </div>
-                    </div>
+              {/* Products Section */}
+              <div className="flex-1">
+                {loadingProducts ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+                    <p className="text-gray-600 dark:text-gray-300 mt-2">Cargando productos...</p>
                   </div>
-                ))}
-              </div>
-            )}
+                ) : (
+                  <>
+                    {/* Filtered Products Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {supplierProducts
+                        .filter(product => !selectedCategory || product.tags.includes(selectedCategory))
+                        .map((product, index) => {
+                          const productId = getProductId(product, index);
+                          const quantity = productQuantities[productId] || 0;
+                          
+                          return (
+                            <div
+                              key={productId}
+                              className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all"
+                            >
+                              {/* Product Image */}
+                              <div className="relative h-48 bg-gray-200 dark:bg-gray-700">
+                                {product.images && product.images.length > 0 ? (
+                                  <img
+                                    src={product.images[0]}
+                                    alt={product.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Package className="w-12 h-12 text-gray-400" />
+                                  </div>
+                                )}
+                                {quantity > 0 && (
+                                  <div className="absolute top-2 right-2 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-medium">
+                                    {quantity}
+                                  </div>
+                                )}
+                              </div>
 
-            {supplierProducts.length === 0 && !loadingProducts && (
-              <div className="text-center py-12">
-                <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  No hay productos disponibles
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Este proveedor no tiene productos disponibles en este momento
-                </p>
+                              {/* Product Info */}
+                              <div className="p-4">
+                                <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-1">
+                                  {capitalizeWords(product.name)}
+                                </h3>
+                                <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
+                                  {product.description}
+                                </p>
+                                <div className="flex items-center justify-between mb-3">
+                                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                    ${product.price.toLocaleString()}
+                                  </span>
+                                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                                    Stock: {product.stock}
+                                  </span>
+                                </div>
+                                <div className="mb-4">
+                                  <span className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
+                                    {product.tags.length > 0 ? capitalizeWords(product.tags[0]) : 'Sin categoría'}
+                                  </span>
+                                </div>
+                                
+                                {/* Quantity Controls */}
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                                    Cantidad para comprar:
+                                  </span>
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        updateProductQuantity(productId, -1);
+                                      }}
+                                      disabled={quantity === 0}
+                                      className="w-8 h-8 rounded-full border border-red-300 dark:border-red-600 flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-red-600"
+                                      type="button"
+                                    >
+                                      <span className="text-lg leading-none">-</span>
+                                    </button>
+                                    <span className="w-12 text-center font-bold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 py-1 rounded">
+                                      {quantity}
+                                    </span>
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        updateProductQuantity(productId, 1);
+                                      }}
+                                      className="w-8 h-8 rounded-full border border-green-300 dark:border-green-600 flex items-center justify-center hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors text-green-600"
+                                      type="button"
+                                    >
+                                      <span className="text-lg leading-none">+</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+
+                    {supplierProducts.filter(product => !selectedCategory || product.tags.includes(selectedCategory)).length === 0 && (
+                      <div className="text-center py-12">
+                        <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                          No hay productos en esta categoría
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-300">
+                          {selectedCategory 
+                            ? `No se encontraron productos en la categoría "${capitalizeWords(selectedCategory)}"`
+                            : 'Este proveedor no tiene productos disponibles en este momento'
+                          }
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-            )}
+            </div>
           </>
         )}
       </div>

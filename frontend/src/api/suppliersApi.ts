@@ -82,6 +82,12 @@ export const addSupplierProductsToShopRequest = async (supplierId: string, shopI
   return data;
 };
 
+// Add products with quantities from supplier to shop
+export const addProductsToShop = async (supplierId: string, shopId: string, payload: { products: { productId: string; quantity: number }[] }) => {
+  const { data } = await API.post(`/${supplierId}/add-to-shop/${shopId}`, payload);
+  return data;
+};
+
 // Get shops working with a supplier
 export const getSupplierShopsRequest = async (supplierId: string) => {
   const { data } = await API.get(`/${supplierId}/shops`);
