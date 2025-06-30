@@ -49,15 +49,27 @@ export default function RepartidorPage() {
   useWebSocket({
     onOrderAssigned: (orderData) => {
       console.log("Nueva orden asignada:", orderData)
+      // Refresh both lists to ensure consistency
       loadMyDeliveries()
       loadAvailableOrders()
     },
     onOrderStatusUpdated: (updatedOrder: Order) => {
+      console.log("Estado de orden actualizado:", updatedOrder)
+      
+      // Update the orders state immediately for responsive UI
       setOrders(prev => prev.map(order => 
         isSameOrder(order, updatedOrder) ? updatedOrder : order
       ))
-      // Also refresh available orders as one might have been taken
+      
+      // Also refresh available orders as one might have been taken or delivered
       loadAvailableOrders()
+      
+      // If it's a status change that affects our lists, do a full refresh
+      if (updatedOrder.status === 'entregado' || updatedOrder.status === 'en_entrega') {
+        setTimeout(() => {
+          loadMyDeliveries()
+        }, 500) // Small delay to allow backend to sync
+      }
     }
   })
 
@@ -71,12 +83,9 @@ export default function RepartidorPage() {
     try {
       setLoading(true)
       setError(null)
-      console.log('🚚 Loading ALL deliveries for repartidor...')
       
       // Use the new endpoint that gets ALL deliveries (all statuses)
       const response = await apiService.getAllMyDeliveries()
-      console.log('🚚 ALL deliveries response:', response)
-      console.log('🚚 Filtered active orders (en_entrega):', response?.filter((order: any) => order.status === 'en_entrega'))
       
       setOrders(response || [])
     } catch (err) {
@@ -91,10 +100,8 @@ export default function RepartidorPage() {
     try {
       setLoadingAvailable(true)
       setError(null)
-      console.log('📦 Loading available orders for delivery...')
       
       const response = await apiService.getAvailableOrdersForDelivery()
-      console.log('📦 Available orders response:', response)
       
       setAvailableOrders(response || [])
     } catch (err) {
@@ -114,11 +121,13 @@ export default function RepartidorPage() {
       }
       
       setTakingOrder(orderId)
-      const result = await apiService.takeOrder(orderId)
+      await apiService.takeOrder(orderId)
       
-      // Refresh both lists
-      await loadMyDeliveries()
-      await loadAvailableOrders()
+      // Force refresh of both lists
+      await Promise.all([
+        loadMyDeliveries(),
+        loadAvailableOrders()
+      ])
       
       alert('Pedido tomado exitosamente')
       setActiveTab('my-orders') // Switch to my orders tab
@@ -139,8 +148,11 @@ export default function RepartidorPage() {
       }
       
       setUpdatingOrder(orderId)
-      await apiService.updateOrderStatus(orderId, 'entregado')
-      // Order will be updated via WebSocket
+      await apiService.markAsDelivered(orderId)
+      
+      // Force refresh to ensure the order moves to the delivered section
+      await loadMyDeliveries()
+      
       alert('Pedido marcado como entregado exitosamente')
     } catch (err) {
       console.error('Error delivering order:', err)
@@ -287,9 +299,6 @@ export default function RepartidorPage() {
 
   const activeOrders = orders.filter(order => order.status === 'en_entrega')
   const completedOrders = orders.filter(order => order.status === 'entregado')
-
-  // Debug log
-  console.log('📊 Debug - orders:', orders.length, 'activeOrders:', activeOrders.length, 'completedOrders:', completedOrders.length)
 
   if (!user || user.role !== 'repartidor') {
     return (
@@ -450,7 +459,7 @@ export default function RepartidorPage() {
             </h2>
             <div className="space-y-4">
               {activeOrders.map((order) => (
-                <div key={order.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-l-4 border-indigo-500">
+                <div key={order._id || order.id || order.orderNumber || `active-${order.orderNumber}`} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-l-4 border-indigo-500">
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-4">
@@ -504,7 +513,7 @@ export default function RepartidorPage() {
                       </p>
                       <div className="flex -space-x-2 overflow-hidden">
                         {order.items?.length > 0 ? order.items.slice(0, 3).map((item, index) => (
-                          <div key={index} className="flex h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 ring-2 ring-white dark:ring-gray-800 items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                          <div key={`active-${order._id || order.id}-item-${index}-${item.productId || index}`} className="flex h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 ring-2 ring-white dark:ring-gray-800 items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
                             {item.quantity || 0}
                           </div>
                         )) : (
@@ -585,7 +594,7 @@ export default function RepartidorPage() {
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {completedOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <tr key={order._id || order.id || order.orderNumber || `completed-${order.orderNumber}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -595,7 +604,8 @@ export default function RepartidorPage() {
                               {order.items?.length || 0} producto{(order.items?.length || 0) !== 1 ? 's' : ''}
                             </div>
                           </div>
-                        </td>                        <td className="px-6 py-4 whitespace-nowrap">
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 dark:text-white">
                             {getCustomerName(order)}
                           </div>
@@ -639,7 +649,7 @@ export default function RepartidorPage() {
             </h2>
             <div className="space-y-4">
               {availableOrders.map((order) => (
-                <div key={order.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-l-4 border-indigo-500">
+                <div key={order._id || order.id || order.orderNumber || `available-${order.orderNumber}`} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-l-4 border-indigo-500">
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-4">
@@ -693,7 +703,7 @@ export default function RepartidorPage() {
                       </p>
                       <div className="flex -space-x-2 overflow-hidden">
                         {order.items?.length > 0 ? order.items.slice(0, 3).map((item, index) => (
-                          <div key={index} className="flex h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 ring-2 ring-white dark:ring-gray-800 items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                          <div key={`available-${order._id || order.id}-item-${index}-${item.productId || index}`} className="flex h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 ring-2 ring-white dark:ring-gray-800 items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
                             {item.quantity || 0}
                           </div>
                         )) : (

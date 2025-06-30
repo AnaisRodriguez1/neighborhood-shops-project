@@ -317,8 +317,6 @@ export class OrdersService {
       const calculatedOffset =
         offset !== undefined ? offset : page ? (page - 1) * limit : 0;
 
-      console.log('🔍 findAllDeliveriesByDeliveryPerson - deliveryPersonId:', deliveryPersonId);
-
       if (!Types.ObjectId.isValid(deliveryPersonId)) {
         throw new BadRequestException(
           `'${deliveryPersonId}' no es un ObjectId válido.`,
@@ -326,7 +324,6 @@ export class OrdersService {
       }
 
       const deliveryPersonObjectId = new Types.ObjectId(deliveryPersonId);
-      console.log('🔍 ObjectId:', deliveryPersonObjectId);
 
       // Buscar TODOS los pedidos asignados al repartidor (todos los status)
       const orders = await this.orderModel
@@ -343,15 +340,6 @@ export class OrdersService {
         .limit(limit)
         .sort({ createdAt: -1 })
         .exec();
-
-      console.log('🔍 Found orders for delivery person:', orders.length);
-      
-      // Let's also check what orders exist with any deliveryPerson
-      const allOrdersWithDeliveryPerson = await this.orderModel.find({ 
-        deliveryPerson: { $exists: true } 
-      }).select('_id deliveryPerson status').exec();
-      console.log('🔍 All orders with deliveryPerson:', allOrdersWithDeliveryPerson.length);
-      console.log('🔍 Sample orders:', allOrdersWithDeliveryPerson.slice(0, 3));
 
       // Filtrar items con productos null/undefined después del populate
       const cleanedOrders = orders.map((order) => {
@@ -1113,8 +1101,6 @@ export class OrdersService {
       order.deliveryPerson = new Types.ObjectId(user._id);
       order.status = 'en_entrega';
       await order.save();
-
-      console.log('✅ Order updated - deliveryPerson:', order.deliveryPerson, 'status:', order.status);
 
       // Repoblar la orden con todos los datos necesarios
       await order.populate(['client', 'shop', 'deliveryPerson', 'items.product']);
