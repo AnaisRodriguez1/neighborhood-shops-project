@@ -36,10 +36,8 @@ export default function DashboardPage() {
     try {
       setLoadingShops(true)
       const shops = await getMyShopsRequest()
-      console.log('User shops:', shops)
       setUserShops(shops || [])
     } catch (error) {
-      console.error('Error loading user shops:', error)
       setUserShops([])
     } finally {
       setLoadingShops(false)

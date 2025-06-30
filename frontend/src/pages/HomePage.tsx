@@ -25,28 +25,20 @@ export default function HomePage() {
   const loadProductsAndShops = async () => {
     try {
       setLoading(true)
-      console.log("🔍 Cargando Products y tiendas...")
       const [productsResponse, shopsResponse] = await Promise.all([
         apiService.getProducts(),
         apiService.getShops()
       ])
       
-      console.log("📦 Products cargados:", productsResponse)
-      console.log("🏪 Tiendas cargadas:", shopsResponse)
-      
       setProducts(productsResponse)
       setShops(shopsResponse.data || shopsResponse)
     } catch (err) {
       setError("Error al cargar los Products")
-      console.error("❌ Error cargando datos:", err)    } finally {
+    } finally {
       setLoading(false)
     }
   }
   const handleAddToCart = (product: Product) => {
-    console.log("🛒 Intentando agregar al carrito:", product.name)
-    console.log("👤 Usuario actual:", user)
-    console.log("🏪 Tiendas disponibles:", shops)
-    
     // Find the shop for this product - handle both string ID and object with ID
     let shopId: string
     if (typeof product.shopId === 'string') {
@@ -54,21 +46,14 @@ export default function HomePage() {
     } else if (product.shopId && typeof product.shopId === 'object' && 'id' in product.shopId) {
       shopId = (product.shopId as any).id
     } else {
-      console.log("❌ ShopId inválido:", product.shopId)
       return
     }
     
     const shop = shops.find(s => s.id === shopId)
-    console.log("🔍 ShopId extraído:", shopId)
-    console.log("🔍 Tienda encontrada para Product:", shop)
     
     if (shop) {
-      console.log("✅ Agregando al carrito:", product.name, "de tienda:", shop.name)
       addToCart(product, shop)
       addNotification(`${product.name} agregado al carrito`, 'success')
-    } else {      console.log("❌ No se encontró la tienda para el Product:", product.shopId)
-      console.log("❌ ShopId extraído:", shopId)
-      console.log("❌ IDs de tiendas disponibles:", shops.map(s => s.id))
     }
   }
   
