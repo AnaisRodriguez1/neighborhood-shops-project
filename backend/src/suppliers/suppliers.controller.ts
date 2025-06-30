@@ -94,4 +94,10 @@ export class SuppliersController {
     
     return this.suppliersService.toggleSupplierRelationship(supplierId, shopObjectId.toString(), body.isWorking);
   }
+
+  @Get(':id/products-with-stock')
+  @Auth(ValidRoles.locatario)
+  getSupplierProductsWithStock(@Param('id') id: string) {
+    return this.suppliersService.getSupplierProductsWithStock(id);
+  }
 }

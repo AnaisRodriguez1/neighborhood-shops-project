@@ -93,6 +93,19 @@ export class SuppliersService {
     return products;
   }
 
+  async getSupplierProductsWithStock(supplierId: string): Promise<Product[]> {
+    const supplierObjectId = new Types.ObjectId(supplierId);
+    
+    // Get products from supplier that are active and have stock
+    return await this.productModel
+      .find({ 
+        supplierId: supplierObjectId,
+        isActive: true
+      })
+      .select('name description price stock tags calories images slug')
+      .exec();
+  }
+
   async addProductsToShop(supplierId: string, shopId: string, products: { productId: string; quantity: number }[]): Promise<any> {
     console.log('=== ADD PRODUCTS TO SHOP SERVICE ===');
     console.log('Supplier ID:', supplierId);
@@ -121,7 +134,7 @@ export class SuppliersService {
     const supplierObjectId = new Types.ObjectId(supplierId);
     console.log('Converted supplier ID to ObjectId:', supplierObjectId);
 
-    // Get the supplier products
+    // Get the supplier products and verify they have enough stock
     const supplierProducts = await this.productModel
       .find({ 
         _id: { $in: productObjectIds },
@@ -149,33 +162,87 @@ export class SuppliersService {
       throw new NotFoundException('Some products not found or do not belong to this supplier');
     }
 
-    // Create new products for the shop based on supplier products with specified quantities
-    const shopProducts = supplierProducts.map(product => {
-      // Find the corresponding quantity for this product
-      const productInfo = products.find(p => p.productId === (product._id as any).toString());
-      const quantity = productInfo ? productInfo.quantity : 0;
+    // Validate stock availability
+    const stockErrors: string[] = [];
+    for (const product of supplierProducts) {
+      const requestedQuantity = products.find(p => p.productId === (product._id as any).toString())?.quantity || 0;
+      if (product.stock < requestedQuantity) {
+        stockErrors.push(`Product ${product.name} has insufficient stock. Available: ${product.stock}, Requested: ${requestedQuantity}`);
+      }
+    }
 
-      return {
-        shopId: shopObjectId, // Use ObjectId instead of string
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        tags: product.tags,
-        calories: product.calories,
-        stock: quantity, // Use the specified quantity as initial stock
-        images: product.images,
-        slug: `${product.slug}-shop-${shopId}`, // Make slug unique for shop
-        // Keep reference to original supplier product
-        originalSupplierId: supplierObjectId,
-        isActive: true,
-      };
-    });
+    if (stockErrors.length > 0) {
+      throw new NotFoundException(`Insufficient stock: ${stockErrors.join(', ')}`);
+    }
 
-    const createdProducts = await this.productModel.insertMany(shopProducts);
+    const updatedProducts: any[] = [];
+    const createdProducts: any[] = [];
+
+    // Process each product
+    for (const supplierProduct of supplierProducts) {
+      const requestedQuantity = products.find(p => p.productId === (supplierProduct._id as any).toString())?.quantity || 0;
+      
+      // Check if product already exists in the shop (by supplier product ID and shopId)
+      // We'll use the original supplier product ID as a reference
+      const existingShopProduct = await this.productModel
+        .findOne({ 
+          shopId: shopObjectId,
+          slug: { $regex: `^${supplierProduct.slug}-shop-${shopId}` } // Check if slug starts with the expected pattern
+        })
+        .exec();
+
+      if (existingShopProduct) {
+        // Product exists in shop, increase stock
+        existingShopProduct.stock += requestedQuantity;
+        await existingShopProduct.save();
+        updatedProducts.push(existingShopProduct);
+        console.log(`Updated stock for existing product ${existingShopProduct.name}: +${requestedQuantity}, total: ${existingShopProduct.stock}`);
+      } else {
+        // Product doesn't exist in shop, create new one with unique slug
+        // Generate a more unique slug by adding timestamp if needed
+        let uniqueSlug = `${supplierProduct.slug}-shop-${shopId}`;
+        
+        // Check if this exact slug already exists and make it more unique if necessary
+        const existingSlugProduct = await this.productModel.findOne({ 
+          shopId: shopObjectId, 
+          slug: uniqueSlug 
+        }).exec();
+        
+        if (existingSlugProduct) {
+          // If slug already exists, add timestamp to make it unique
+          uniqueSlug = `${supplierProduct.slug}-shop-${shopId}-${Date.now()}`;
+          console.log(`Slug collision detected, using unique slug: ${uniqueSlug}`);
+        }
+        
+        const newShopProduct = new this.productModel({
+          shopId: shopObjectId,
+          name: supplierProduct.name,
+          description: supplierProduct.description,
+          price: supplierProduct.price,
+          tags: supplierProduct.tags,
+          calories: supplierProduct.calories,
+          stock: requestedQuantity,
+          images: supplierProduct.images,
+          slug: uniqueSlug,
+          isActive: true,
+        });
+
+        const savedProduct = await newShopProduct.save();
+        createdProducts.push(savedProduct);
+        console.log(`Created new product ${savedProduct.name} in shop with stock: ${requestedQuantity}, slug: ${savedProduct.slug}`);
+      }
+
+      // Reduce stock from supplier product
+      supplierProduct.stock -= requestedQuantity;
+      await supplierProduct.save();
+      console.log(`Reduced supplier stock for ${supplierProduct.name}: -${requestedQuantity}, remaining: ${supplierProduct.stock}`);
+    }
     
     return {
-      message: `${createdProducts.length} products added to shop successfully`,
-      products: createdProducts
+      message: `Products processed successfully. Created: ${createdProducts.length}, Updated: ${updatedProducts.length}`,
+      created: createdProducts,
+      updated: updatedProducts,
+      totalProcessed: createdProducts.length + updatedProducts.length
     };
   }
 
