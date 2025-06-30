@@ -5,7 +5,8 @@ import { createContext, useContext, useState, useEffect } from "react"
 import { apiService } from "../services/api"
 import type { User, ViewMode } from "../types"
 
-interface AuthContextType {  user: User | null
+interface AuthContextType {
+  user: User | null
   viewMode: ViewMode | null
   login: (email: string, password: string) => Promise<void>
   register: (userData: any) => Promise<void>
@@ -18,7 +19,7 @@ interface AuthContextType {  user: User | null
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     checkAuthStatus()
   }, [])
+
   const checkAuthStatus = async () => {
     try {
       const token = localStorage.getItem("token")
@@ -62,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error
     }
   }
+
   const register = async (userData: any) => {
     try {
       // Prepare the registration data
@@ -100,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setViewMode({ ...viewMode, current: "comprador" })
     }
   }
+
   const switchToOriginalRole = () => {
     if (viewMode) {
       setViewMode({ ...viewMode, current: viewMode.originalRole })
@@ -113,7 +117,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         viewMode,
         login,
         register,
-        logout,        switchToComprador,
+        logout,
+        switchToComprador,
         switchToOriginalRole,
         isAuthenticated: !!user,
         isLoading,
@@ -124,10 +129,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function useAuth() {
+function useAuth() {
   const context = useContext(AuthContext)
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider")
   }
   return context
 }
+
+export { AuthContext, AuthProvider, useAuth }

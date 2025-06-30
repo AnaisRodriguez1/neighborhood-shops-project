@@ -20,6 +20,7 @@ import TiendaDetallePage from "./pages/shop/TiendaDetallePage"
 import ProductoDetallePage from "./pages/shop/ProductoDetallePage"
 import CrearTiendaPage from "./pages/shop/CrearTiendaPage"
 import CrearProductoPage from "./pages/shop/CrearProductoPage"
+import ShopOrdersPage from "./pages/shop/ShopOrdersPage"
 
 // Order Pages
 import CarritoPage from "./pages/orders/CarritoPage"
@@ -108,6 +109,15 @@ function App() {
                   element={
                     <ProtectedRoute requiredRole="locatario">
                       <TodosLosPedidosPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/gestionar-pedidos"
+                  element={
+                    <ProtectedRoute requiredRole="locatario">
+                      <ShopOrdersPage />
                     </ProtectedRoute>
                   }
                 />

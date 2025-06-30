@@ -95,7 +95,7 @@ export class OrdersController {
     return this.ordersService.findOne(id);
   }
   @Patch(':orderId/status')
-  @Auth(ValidRoles.locatario, ValidRoles.repartidor, ValidRoles.presidente)
+  @Auth(ValidRoles.locatario, ValidRoles.presidente)
   updateStatus(
     @Param('orderId', ParseObjectIdPipe) orderId: string,
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
@@ -118,5 +118,26 @@ export class OrdersController {
     @GetUser() user: AuthUser,
   ) {
     return this.ordersService.assignDeliveryPerson(orderId, assignDeliveryPersonDto, user);
+  }
+
+  @Patch(':orderId/delivery-status')
+  @Auth(ValidRoles.repartidor)
+  updateDeliveryStatus(
+    @Param('orderId', ParseObjectIdPipe) orderId: string,
+    @GetUser() user: AuthUser,
+  ) {
+    return this.ordersService.updateDeliveryStatus(orderId, user);
+  }
+
+  @Get('diagnostics/orphaned-orders')
+  @Auth(ValidRoles.presidente)
+  findOrphanedOrders() {
+    return this.ordersService.findOrphanedOrders();
+  }
+
+  @Patch('diagnostics/fix-orphaned-orders')
+  @Auth(ValidRoles.presidente)
+  fixOrphanedOrders() {
+    return this.ordersService.fixOrphanedOrders();
   }
 }

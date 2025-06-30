@@ -118,17 +118,31 @@ export class OrdersService {
       });
 
       await order.save();
-      await order.populate(['client', 'shop', 'items.product']); // Notificar a la tienda vía WebSocket
-      this.ordersGateway.emitToRoom(`shop-${shopId}`, 'new-order', {
-        order,
-        message: 'Nuevo pedido recibido',
-      });
+      await order.populate(['client', 'shop', 'items.product']); 
+      
+      // Notificar a la tienda vía WebSocket
+      if (shopId) {
+        try {
+          this.ordersGateway.emitToRoom(`shop-${shopId}`, 'new-order', {
+            order,
+            message: 'Nuevo pedido recibido',
+          });
+        } catch (wsError) {
+          console.warn('Error enviando notificación WebSocket a la tienda:', wsError);
+        }
+      }
 
       // Notificar al cliente
-      this.ordersGateway.emitToRoom(`client-${clientId}`, 'order-created', {
-        order,
-        message: 'Pedido creado exitosamente',
-      });
+      if (clientId) {
+        try {
+          this.ordersGateway.emitToRoom(`client-${clientId}`, 'order-created', {
+            order,
+            message: 'Pedido creado exitosamente',
+          });
+        } catch (wsError) {
+          console.warn('Error enviando notificación WebSocket al cliente:', wsError);
+        }
+      }
 
       return {
         message: 'Pedido creado exitosamente',
@@ -386,21 +400,25 @@ export class OrdersService {
         .populate(['client', 'shop', 'deliveryPerson']);
       if (!order) {
         throw new NotFoundException('Pedido no encontrado');
-      } // Verificar permisos
-      const userShop = await this.shopModel.findOne({ ownerId: user._id });
+      }
+
+      // Verificar permisos - OBTENER TODAS las tiendas del usuario
+      const userShops = await this.shopModel.find({ 
+        ownerId: new Types.ObjectId(user._id) 
+      });
       // Debug logging
       console.log('=== DEBUG ORDER UPDATE AUTHORIZATION ===');
       console.log('User ID:', user._id);
       console.log('User role:', user.role);
       console.log(
-        'User shop found:',
-        userShop
-          ? {
-              id: userShop.id,
-              _id: userShop._id,
-              ownerId: userShop.ownerId,
-            }
-          : 'No shop found',
+        'User shops found:',
+        userShops.length > 0
+          ? userShops.map(shop => ({
+              id: (shop as any).id,
+              _id: (shop as any)._id,
+              ownerId: (shop as any).ownerId,
+            }))
+          : 'No shops found',
       );
       console.log(
         'Order shop:',
@@ -412,29 +430,41 @@ export class OrdersService {
           : 'No shop in order',
       );
       console.log('Order shop type:', typeof order.shop?._id);
-      console.log('User shop type:', typeof userShop?._id);
-      // Fix: Use _id consistently and convert both to string for comparison
-      const isShopOwner =
-        userShop &&
-        order.shop._id.toString() === (userShop as any)._id.toString();
+      console.log('User shops count:', userShops.length);
+      
+      // Fix: Check if the order belongs to ANY of the user's shops
+      const userShopIds = userShops.map(shop => (shop as any)._id.toString());
+      const isShopOwner = userShops.length > 0 && order.shop && 
+        userShopIds.includes(order.shop._id.toString());
       console.log('Is shop owner check result:', isShopOwner);
       console.log('Shop ID comparison:', {
         orderShopId: order.shop?._id?.toString(),
-        userShopId: (userShop as any)?._id?.toString(),
-        equal:
-          order.shop?._id?.toString() === (userShop as any)?._id?.toString(),
+        userShopIds: userShopIds,
+        isIncluded: userShopIds.includes(order.shop?._id?.toString()),
       });
 
       const isDeliveryPerson =
         user.role === 'repartidor' &&
-        order.deliveryPerson?._id.toString() === user._id.toString();
+        order.deliveryPerson && 
+        order.deliveryPerson._id.toString() === user._id.toString();
       console.log('Is delivery person check result:', isDeliveryPerson);
       console.log('========================================');
 
-      if (!isShopOwner && !isDeliveryPerson && user.role !== 'presidente') {
-        throw new ForbiddenException(
-          'No autorizado para actualizar este pedido',
+      // Restringir permisos: solo locatarios de la tienda y presidentes pueden actualizar estado
+      // Los repartidores deben usar el endpoint específico /delivery-status
+      if (!isShopOwner && user.role !== 'presidente') {
+        if (user.role === 'repartidor') {
+          throw new ForbiddenException(
+            'Los repartidores deben usar el endpoint específico para marcar como entregado.',
+          );
+        } else if (user.role === 'locatario') {        throw new ForbiddenException(
+          `No puedes actualizar este pedido porque pertenece a otra tienda. Este pedido es de la tienda ID: ${order.shop?._id?.toString()}, pero tus tiendas son: ${userShopIds.join(', ')}.`,
         );
+        } else {
+          throw new ForbiddenException(
+            'Solo los locatarios de la tienda pueden actualizar el estado del pedido.',
+          );
+        }
       }
 
       order.status = status;
@@ -446,26 +476,68 @@ export class OrdersService {
         order.actualDeliveryTime = new Date();
       }
 
-      await order.save(); // Notificar cambios vía WebSocket
-      this.ordersGateway.emitToRoom(
-        `client-${order.client._id}`,
-        'order-status-updated',
-        {
-          orderId: order._id,
-          status,
-          message: `Tu pedido está ${this.getStatusMessage(status)}`,
-        },
-      );
+      await order.save();
 
-      if (order.deliveryPerson) {
-        this.ordersGateway.emitToRoom(
-          `delivery-${order.deliveryPerson._id}`,
-          'order-status-updated',
-          {
-            orderId: order._id,
-            status,
-          },
-        );
+      // Repoblar la orden con todos los datos necesarios para el frontend
+      await order.populate(['client', 'shop', 'deliveryPerson', 'items.product']);
+
+      // Notificar cambios vía WebSocket - con validación robusta
+      if (order.client && order.client._id) {
+        try {
+          this.ordersGateway.emitToRoom(
+            `client-${order.client._id}`,
+            'order-status-updated',
+            {
+              order: order.toObject(),
+              orderId: order._id,
+              status,
+              message: `Tu pedido está ${this.getStatusMessage(status)}`,
+            },
+          );
+        } catch (wsError) {
+          console.warn('Error enviando notificación WebSocket al cliente:', wsError);
+        }
+      } else {
+        console.warn(`Pedido ${orderId} no tiene cliente válido para notificación:`, {
+          hasClient: !!order.client,
+          clientId: order.client?._id || 'N/A',
+        });
+      }
+
+      // Notificar a la tienda sobre la actualización del estado
+      if (order.shop && order.shop._id) {
+        try {
+          this.ordersGateway.emitToRoom(
+            `shop-${order.shop._id}`,
+            'order-status-updated',
+            {
+              order: order.toObject(),
+              orderId: order._id,
+              status,
+              message: `Pedido actualizado a ${this.getStatusMessage(status)}`,
+            },
+          );
+        } catch (wsError) {
+          console.warn('Error enviando notificación WebSocket a la tienda:', wsError);
+        }
+      } else {
+        console.warn(`Pedido ${orderId} no tiene tienda válida para notificación`);
+      }
+
+      if (order.deliveryPerson && order.deliveryPerson._id) {
+        try {
+          this.ordersGateway.emitToRoom(
+            `delivery-${order.deliveryPerson._id}`,
+            'order-status-updated',
+            {
+              order: order.toObject(),
+              orderId: order._id,
+              status,
+            },
+          );
+        } catch (wsError) {
+          console.warn('Error enviando notificación WebSocket al repartidor:', wsError);
+        }
       }
 
       return {
@@ -500,10 +572,16 @@ export class OrdersService {
       // Verificar que es repartidor activo
       if (deliveryPerson.role !== 'repartidor' || !deliveryPerson.isActive) {
         throw new BadRequestException('Usuario no es repartidor activo');
-      } // Verificar permisos (solo dueño de tienda o presidente)
-      const userShop = await this.shopModel.findOne({ ownerId: user._id });
-      const isShopOwner =
-        userShop && order.shop.toString() === (userShop as any)._id.toString();
+      } 
+      
+      // Verificar permisos (solo dueño de tienda o presidente) - OBTENER TODAS las tiendas
+      const userShops = await this.shopModel.find({ 
+        ownerId: new Types.ObjectId(user._id) 
+      });
+      
+      const userShopIds = userShops.map(shop => (shop as any)._id.toString());
+      const isShopOwner = userShops.length > 0 && 
+        userShopIds.includes(order.shop.toString());
 
       if (!isShopOwner && user.role !== 'presidente') {
         throw new ForbiddenException('No autorizado para asignar repartidores');
@@ -511,27 +589,60 @@ export class OrdersService {
 
       order.deliveryPerson = new Types.ObjectId(deliveryPersonId);
       order.status = 'en_entrega';
-      await order.save(); // Notificar al repartidor
+      await order.save();
+
+      // Repoblar la orden con todos los datos necesarios
+      await order.populate(['client', 'shop', 'deliveryPerson', 'items.product']);
+
+      // Notificar al repartidor
       this.ordersGateway.emitToRoom(
         `delivery-${deliveryPersonId}`,
         'order-assigned',
         {
-          order,
+          order: order.toObject(),
           message: 'Nuevo pedido asignado',
         },
       );
 
+      // Notificar a la tienda sobre la asignación
+      if (order.shop && order.shop._id) {
+        try {
+          this.ordersGateway.emitToRoom(
+            `shop-${order.shop._id}`,
+            'order-status-updated',
+            {
+              order: order.toObject(),
+              orderId: order._id,
+              status: 'en_entrega',
+              deliveryPerson: deliveryPerson.name,
+              message: `Pedido asignado a repartidor ${deliveryPerson.name}`,
+            },
+          );
+        } catch (wsError) {
+          console.warn('Error enviando notificación WebSocket a la tienda:', wsError);
+        }
+      }
+
       // Notificar al cliente
-      this.ordersGateway.emitToRoom(
-        `client-${order.client}`,
-        'order-status-updated',
-        {
-          orderId: order._id,
-          status: 'en_entrega',
-          deliveryPerson: deliveryPerson.name,
-          message: 'Tu pedido está en camino',
-        },
-      );
+      if (order.client && order.client._id) {
+        try {
+          this.ordersGateway.emitToRoom(
+            `client-${order.client._id}`,
+            'order-status-updated',
+            {
+              order: order.toObject(),
+              orderId: order._id,
+              status: 'en_entrega',
+              deliveryPerson: deliveryPerson.name,
+              message: 'Tu pedido está en camino',
+            },
+          );
+        } catch (wsError) {
+          console.warn('Error enviando notificación WebSocket al cliente:', wsError);
+        }
+      } else {
+        console.warn(`Pedido ${order._id} no tiene cliente válido para notificación de asignación`);
+      }
 
       return { message: 'Repartidor asignado exitosamente' };
     } catch (error) {
@@ -602,18 +713,25 @@ export class OrdersService {
 
       // Encontrar las tiendas del usuario
       const userObjectId = new Types.ObjectId(user._id.toString());
+      console.log(`🔍 Finding shops for user ID: ${userObjectId}`);
+      
       const userShops = await this.shopModel.find({ ownerId: userObjectId });
+      console.log(`🏪 User shops found: ${userShops.length}`, userShops.map(s => ({ id: (s as any)._id.toString(), name: (s as any).name })));
 
       if (userShops.length === 0) {
+        console.log('❌ No shops found for user');
         return [];
       }
 
       const shopIds = userShops.map((shop) => shop._id as Types.ObjectId);
+      console.log(`📋 Shop IDs to query: ${shopIds.map(id => id.toString())}`);
 
       // Buscar TODOS los pedidos (todos los status) de las tiendas del usuario
       const query = {
         shop: { $in: shopIds },
       };
+
+      console.log(`🔍 Order query:`, query);
 
       const orders = await this.orderModel
         .find(query)
@@ -625,6 +743,11 @@ export class OrdersService {
         .limit(limit)
         .skip(calculatedOffset)
         .exec();
+
+      console.log(`📦 Orders found: ${orders.length}`);
+      orders.forEach(order => {
+        console.log(`  - Order ${order._id}: Shop ${order.shop?._id} (${(order.shop as any)?.name})`);
+      });
 
       // Filtrar items con productos null/undefined después del populate
       const cleanedOrders = orders.map((order) => {
@@ -741,5 +864,164 @@ export class OrdersService {
     });
 
     return cleanedOrders;
+  }
+
+  async updateDeliveryStatus(orderId: string, user: AuthUser) {
+    try {
+      const order = await this.orderModel
+        .findById(orderId)
+        .populate(['client', 'shop', 'deliveryPerson']);
+      
+      if (!order) {
+        throw new NotFoundException('Pedido no encontrado');
+      }
+
+      // Verificar que el usuario es el repartidor asignado a este pedido
+      if (!order.deliveryPerson || order.deliveryPerson._id.toString() !== user._id.toString()) {
+        throw new ForbiddenException('No estás autorizado para actualizar este pedido');
+      }
+
+      // Solo permitir cambiar de "en_entrega" a "entregado"
+      if (order.status !== 'en_entrega') {
+        throw new BadRequestException('El pedido debe estar en estado "en_entrega" para ser marcado como entregado');
+      }
+
+      order.status = 'entregado';
+      order.actualDeliveryTime = new Date();
+      await order.save();
+
+      // Repoblar la orden con todos los datos necesarios
+      await order.populate(['client', 'shop', 'deliveryPerson', 'items.product']);
+
+      // Notificar cambios vía WebSocket
+      if (order.client && order.client._id) {
+        try {
+          this.ordersGateway.emitToRoom(
+            `client-${order.client._id}`,
+            'order-status-updated',
+            {
+              order: order.toObject(),
+              orderId: order._id,
+              status: 'entregado',
+              message: 'Tu pedido ha sido entregado exitosamente',
+            },
+          );
+        } catch (wsError) {
+          console.warn('Error enviando notificación WebSocket al cliente:', wsError);
+        }
+      } else {
+        console.warn(`Pedido ${orderId} no tiene cliente válido para notificación de entrega`);
+      }
+
+      // Notificar a la tienda
+      if (order.shop && order.shop._id) {
+        try {
+          this.ordersGateway.emitToRoom(
+            `shop-${order.shop._id}`,
+            'order-status-updated',
+            {
+              order: order.toObject(),
+              orderId: order._id,
+              status: 'entregado',
+              message: 'Pedido entregado exitosamente',
+            },
+          );
+        } catch (wsError) {
+          console.warn('Error enviando notificación WebSocket a la tienda:', wsError);
+        }
+      } else {
+        console.warn(`Pedido ${orderId} no tiene tienda válida para notificación de entrega`);
+      }
+
+      return {
+        message: 'Pedido marcado como entregado exitosamente',
+        order,
+      };
+    } catch (error) {
+      handleExceptions(error, 'el pedido', 'marcar como entregado');
+    }
+  }
+
+  /**
+   * Find orders with invalid or missing client references
+   */
+  async findOrphanedOrders() {
+    try {
+      // Find orders where client populate fails or client is null
+      const allOrders = await this.orderModel
+        .find({})
+        .populate('client', 'name email')
+        .populate('shop', 'name')
+        .select('_id orderNumber client shop status createdAt totalAmount')
+        .lean();
+
+      const orphanedOrders = allOrders.filter(order => !order.client);
+      
+      console.log(`🔍 Total orders in database: ${allOrders.length}`);
+      console.log(`⚠️ Orphaned orders found: ${orphanedOrders.length}`);
+      
+      if (orphanedOrders.length > 0) {
+        orphanedOrders.forEach(order => {
+          console.log(`❌ Order ${order._id} (${order.orderNumber}) has no valid client`);
+        });
+      }
+
+      return {
+        totalOrders: allOrders.length,
+        orphanedOrders: orphanedOrders.length,
+        orphanedOrderDetails: orphanedOrders.map(order => ({
+          _id: order._id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          shop: (order.shop as any)?.name || 'Unknown shop',
+          createdAt: (order as any).createdAt,
+          totalAmount: order.totalAmount
+        }))
+      };
+    } catch (error) {
+      console.error('Error finding orphaned orders:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Attempt to fix orphaned orders by either removing them or assigning to a default client
+   */
+  async fixOrphanedOrders() {
+    try {
+      const diagnosis = await this.findOrphanedOrders();
+      
+      if (diagnosis.orphanedOrders === 0) {
+        return {
+          message: 'No orphaned orders found',
+          fixed: 0
+        };
+      }
+
+      // For now, let's just mark these orders as cancelled and add a note
+      // In a real scenario, you might want to assign them to a default user or handle differently
+      const orphanedOrderIds = diagnosis.orphanedOrderDetails.map(order => order._id);
+      
+      const result = await this.orderModel.updateMany(
+        { _id: { $in: orphanedOrderIds } },
+        { 
+          status: 'cancelado',
+          $set: { 
+            notes: 'Order cancelled due to missing client reference' 
+          }
+        }
+      );
+
+      console.log(`🔧 Fixed ${result.modifiedCount} orphaned orders by marking them as cancelled`);
+
+      return {
+        message: `Fixed ${result.modifiedCount} orphaned orders by marking them as cancelled`,
+        fixed: result.modifiedCount,
+        previousCount: diagnosis.orphanedOrders
+      };
+    } catch (error) {
+      console.error('Error fixing orphaned orders:', error);
+      throw error;
+    }
   }
 }

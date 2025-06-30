@@ -243,4 +243,9 @@ export const apiService = {
     return data
   },
 
+  // Specific endpoint for delivery persons to mark orders as delivered
+  markAsDelivered: async (orderId: string) => {
+    const { data } = await api.patch(`/orders/${orderId}/delivery-status`)
+    return data
+  },
 }
