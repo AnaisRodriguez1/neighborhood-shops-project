@@ -76,6 +76,7 @@ export default function RepartidorPage() {
       // Use the new endpoint that gets ALL deliveries (all statuses)
       const response = await apiService.getAllMyDeliveries()
       console.log('🚚 ALL deliveries response:', response)
+      console.log('🚚 Filtered active orders (en_entrega):', response?.filter((order: any) => order.status === 'en_entrega'))
       
       setOrders(response || [])
     } catch (err) {
@@ -113,7 +114,7 @@ export default function RepartidorPage() {
       }
       
       setTakingOrder(orderId)
-      await apiService.takeOrder(orderId)
+      const result = await apiService.takeOrder(orderId)
       
       // Refresh both lists
       await loadMyDeliveries()
@@ -286,6 +287,9 @@ export default function RepartidorPage() {
 
   const activeOrders = orders.filter(order => order.status === 'en_entrega')
   const completedOrders = orders.filter(order => order.status === 'entregado')
+
+  // Debug log
+  console.log('📊 Debug - orders:', orders.length, 'activeOrders:', activeOrders.length, 'completedOrders:', completedOrders.length)
 
   if (!user || user.role !== 'repartidor') {
     return (
