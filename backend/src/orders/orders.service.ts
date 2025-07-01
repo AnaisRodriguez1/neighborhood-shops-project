@@ -123,6 +123,9 @@ export class OrdersService {
       await order.save();
       await order.populate(['client', 'shop', 'items.product']); 
       
+      // Incrementar score de la tienda
+      await this.incrementShopScore(shopObjectId);
+      
       // Notificar a la tienda vía WebSocket
       if (shopId) {
         try {
@@ -1206,6 +1209,29 @@ export class OrdersService {
     } catch (error) {
       console.error('Error fixing ObjectId fields:', error);
       throw error;
+    }
+  }
+
+  // Método privado para incrementar el score de la tienda
+  private async incrementShopScore(shopId: string | Types.ObjectId) {
+    try {
+      const incrementValue = 0.001; // Incremento pequeño por cada pedido
+      
+      await this.shopModel.findByIdAndUpdate(
+        shopId,
+        { 
+          $inc: { 
+            score: incrementValue,
+            totalSales: 1 // También incrementar las ventas totales
+          } 
+        },
+        { new: true }
+      );
+      
+      console.log(`✅ Score incrementado para tienda ${shopId} en +${incrementValue}`);
+    } catch (error) {
+      console.error('❌ Error incrementando score de tienda:', error);
+      // No lanzar error para no afectar la creación del pedido
     }
   }
 }
