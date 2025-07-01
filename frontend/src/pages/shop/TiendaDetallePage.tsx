@@ -236,11 +236,8 @@ export default function TiendaDetallePage() {
                   )}
                 </div>
 
-                {/* Action Buttons - Para propietarios de la tienda (locatarios) y presidentes */}
-                {!isCompradorView && (
-                  (isOwner && user?.role === "locatario") || 
-                  user?.role === "presidente"
-                ) && (
+                {/* Action Buttons - Solo para la locataria dueña de la tienda */}
+                {!isCompradorView && isOwner && user?.role === "locatario" && (
                   <div className="flex space-x-2">
                     <Link
                       to={`/tiendas/${shop.id}/editar`}
@@ -340,8 +337,8 @@ export default function TiendaDetallePage() {
           </div>
         )}
 
-        {/* Orders Management Section */}
-        {isOwner && (
+        {/* Orders Management Section - Solo para la locataria dueña */}
+        {isOwner && user?.role === "locatario" && (
           <ShopOrdersManagement shop={shop} />
         )}
 
@@ -479,24 +476,27 @@ export default function TiendaDetallePage() {
                               <span>Agregar</span>
                             </button>
                           ) : (
-                            <>
-                              <Link
-                                to={`/productos/${product.id}/editar`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-center py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
-                              >
-                                Editar
-                              </Link>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteProduct(product.id);
-                                }}
-                                className="bg-red-600 dark:bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
+                            // Solo la locataria dueña puede editar/eliminar productos
+                            isOwner && user?.role === "locatario" && (
+                              <>
+                                <Link
+                                  to={`/productos/${product.id}/editar`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-center py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
+                                >
+                                  Editar
+                                </Link>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteProduct(product.id);
+                                  }}
+                                  className="bg-red-600 dark:bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )
                           )}
                         </div>
                       </div>
@@ -558,10 +558,7 @@ export default function TiendaDetallePage() {
                     ? "Esta tienda aún no tiene productos disponibles."
                     : "Comienza agregando productos a tu tienda."}
                 </p>
-                {!isCompradorView && (
-                  (isOwner && user?.role === "locatario") || 
-                  user?.role === "presidente"
-                ) && (
+                {!isCompradorView && isOwner && user?.role === "locatario" && (
                   <Link
                     to={`/tiendas/${shop.id}/productos/nuevo`}
                     className="inline-flex items-center space-x-2 bg-blue-600 dark:bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
