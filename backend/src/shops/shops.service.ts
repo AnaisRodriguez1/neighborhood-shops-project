@@ -104,18 +104,39 @@ export class ShopsService {  constructor(
     return shop;
   }
 
-  async update(id: string, updateShopDto: UpdateShopDto, user: AuthUser) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException(`'${id}' no es un ObjectId válido.`);
+  async update(id: string, updateShopDto: UpdateShopDto, user: AuthUser): Promise<Shop> {
+    console.log('=== UPDATE SHOP DEBUG ===');
+    console.log('Shop ID:', id);
+    console.log('User ID:', user._id);
+    console.log('User ID type:', typeof user._id);
+    console.log('User role:', user.role);
+    console.log('Update DTO:', updateShopDto);
+    
+    const shop = await this.shopModel.findById(id);
+    if (!shop) {
+      throw new NotFoundException('Tienda no encontrada');
     }
 
-    const shop = await this.findOne(id);
+    console.log('Shop found:', {
+      id: shop._id,
+      ownerId: shop.ownerId,
+      ownerIdType: typeof shop.ownerId,
+      ownerIdString: shop.ownerId.toString(),
+      userIdString: user._id.toString()
+    });
 
-    if (shop.ownerId.toString() !== user._id.toString()) {
-      throw new BadRequestException(
-        'No tienes permisos para modificar esta tienda.',
-      );
+    // Verificar si el usuario es el propietario de la tienda o es presidente
+    if (shop.ownerId.toString() !== user._id.toString() && user.role !== 'presidente') {
+      console.log('Permission denied - owner check failed');
+      console.log('shop.ownerId.toString():', shop.ownerId.toString());
+      console.log('user._id.toString():', user._id.toString());
+      console.log('Match result:', shop.ownerId.toString() === user._id.toString());
+      console.log('Is presidente:', user.role === 'presidente');
+      throw new BadRequestException('No tienes permisos para modificar esta tienda.');
     }
+
+    console.log('Permission check passed!');
+    console.log('==========================');
 
     try {
       Object.assign(shop, updateShopDto);
@@ -126,9 +147,10 @@ export class ShopsService {  constructor(
           `Ya existe otra tienda con ese nombre o slug.`,
         );
       }
-      handleExceptions(error, 'la tienda', 'actualizar');
+      throw handleExceptions(error, 'la tienda', 'actualizar');
     }
   }
+
   async remove(id: string, user: AuthUser) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException(`'${id}' no es un ObjectId válido.`);

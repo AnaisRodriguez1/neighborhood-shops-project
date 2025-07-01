@@ -1,19 +1,21 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, useParams } from "react-router-dom"
 import { apiService } from "../../services/api"
 import { useAuth } from "../../context/AuthContext"
-import { Store, MapPin, Phone, Mail, Clock, Truck, Image } from "lucide-react"
+import { Store, MapPin, Truck, Image } from "lucide-react"
 
-export default function CrearTiendaPage() {  const [formData, setFormData] = useState({
+export default function CrearTiendaPage() {
+  const params = useParams<{ shopId?: string }>()
+  const { shopId } = params
+  const isEditing = !!shopId
+
+  const [formData, setFormData] = useState({
     name: "",
     description: "",
     address: "",
-    phone: "",
-    email: "",
-    schedule: "",
     deliveryAvailable: false,
     categories: [] as string[],
     images: ["", ""] as string[], // [icon, banner]
@@ -22,6 +24,61 @@ export default function CrearTiendaPage() {  const [formData, setFormData] = use
   const [error, setError] = useState("")
   const { user } = useAuth()
   const navigate = useNavigate()
+
+  // Cargar datos de la tienda si está editando
+  useEffect(() => {
+    if (isEditing && shopId) {
+      const loadShopData = async () => {
+        try {
+          setIsLoading(true)
+          const shop = await apiService.getShop(shopId)
+          
+          // Función para extraer el valor real del ObjectId o User object
+          const extractIdValue = (id: any): string => {
+            if (typeof id === 'string') {
+              return id;
+            } else if (typeof id === 'object' && id !== null) {
+              // Si es un objeto User con propiedad 'id'
+              if (id.id) return String(id.id);
+              // Si es un ObjectId con propiedades comunes
+              if (id.$oid) return id.$oid;
+              if (id._id) return id._id;
+              if (id.toString && typeof id.toString === 'function') {
+                const str = id.toString();
+                if (str !== '[object Object]') return str;
+              }
+            }
+            return String(id);
+          };
+          
+          // Verificar que el usuario sea el dueño de la tienda
+          const shopOwnerIdStr = extractIdValue(shop.ownerId);
+          const userIdStr = extractIdValue(user?.id);
+          
+          if (shopOwnerIdStr !== userIdStr) {
+            setError(`No tienes permisos para editar esta tienda`)
+            return
+          }
+          
+          setFormData({
+            name: shop.name || "",
+            description: shop.description || "",
+            address: shop.address || "",
+            deliveryAvailable: shop.deliveryAvailable || false,
+            categories: shop.categories || [],
+            images: shop.images || ["", ""],
+          })
+        } catch (err: any) {
+          setError(err.message || "Error al cargar los datos de la tienda")
+        } finally {
+          setIsLoading(false)
+        }
+      }
+      
+      loadShopData()
+    }
+  }, [isEditing, shopId, user?.id])
+
   // Verificar que el usuario sea locatario
   if (user?.role !== "locatario") {
     return (
@@ -46,14 +103,24 @@ export default function CrearTiendaPage() {  const [formData, setFormData] = use
         description: formData.description,
         address: formData.address,
         deliveryAvailable: formData.deliveryAvailable,
-        categories: formData.categories,
+        categories: formData.categories.join(','), // Convertir array a string separado por comas
         images: formData.images
       }
       
-      await apiService.createShop(shopData)
-      navigate("/dashboard")
+      if (isEditing && shopId) {
+        await apiService.updateShop(shopId, shopData)
+        navigate(`/tiendas/${shopId}`)
+      } else {
+        await apiService.createShop(shopData)
+        navigate("/dashboard")
+      }
     } catch (err: any) {
-      setError(err.message || "Error al crear la tienda")
+      console.error("=== ERROR DETAILS ===")
+      console.error("Error object:", err)
+      console.error("Error message:", err.message)
+      console.error("Error response:", err.response)
+      console.error("====================")
+      setError(err.message || `Error al ${isEditing ? 'actualizar' : 'crear'} la tienda`)
     } finally {
       setIsLoading(false)
     }
@@ -90,8 +157,15 @@ export default function CrearTiendaPage() {  const [formData, setFormData] = use
           <div className="w-16 h-16 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Store className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Crear Nueva Tienda</h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">Completa la información para crear tu tienda en la plataforma</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            {isEditing ? "Editar Tienda" : "Crear Nueva Tienda"}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
+            {isEditing 
+              ? "Actualiza la información de tu tienda" 
+              : "Completa la información para crear tu tienda en la plataforma"
+            }
+          </p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
@@ -147,66 +221,6 @@ export default function CrearTiendaPage() {  const [formData, setFormData] = use
                   onChange={handleChange}
                   className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Calle, número, ciudad"
-                />
-              </div>
-            </div>
-
-            {/* Teléfono */}
-            <div>
-              <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Teléfono *
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
-                <input
-                  id="telefono"
-                  name="phone"
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="+1234567890"
-                />
-              </div>
-            </div>
-
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email de contacto *
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="contacto@mitienda.com"
-                />
-              </div>
-            </div>
-
-            {/* Horario */}
-            <div>
-              <label htmlFor="horario" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Horario de atención *
-              </label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
-                <input
-                  id="horario"
-                  name="schedule"
-                  type="text"
-                  required
-                  value={formData.schedule}
-                  onChange={handleChange}
-                  className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Ej: Lun-Vie 9:00-18:00, Sáb 9:00-14:00"
                 />
               </div>
             </div>
@@ -291,7 +305,7 @@ export default function CrearTiendaPage() {  const [formData, setFormData] = use
             <div className="flex space-x-4 pt-6">
               <button
                 type="button"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate(isEditing ? `/tiendas/${shopId}` : "/dashboard")}
                 className="flex-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
               >
                 Cancelar
@@ -301,7 +315,10 @@ export default function CrearTiendaPage() {  const [formData, setFormData] = use
                 disabled={isLoading}
                 className="flex-1 bg-blue-600 dark:bg-blue-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isLoading ? "Creando..." : "Crear Tienda"}
+                {isLoading 
+                  ? (isEditing ? "Actualizando..." : "Creando...") 
+                  : (isEditing ? "Actualizar Tienda" : "Crear Tienda")
+                }
               </button>
             </div>
           </form>

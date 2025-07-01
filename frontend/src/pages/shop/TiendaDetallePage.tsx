@@ -26,11 +26,31 @@ export default function TiendaDetallePage() {
   const { addToCart } = useCart()
   const isCompradorView = viewMode?.current === "comprador"
   
-  // Corregir la comparación del propietario
-  const isOwner = user && shop && (
-    user.id === shop.ownerId || 
-    (typeof shop.ownerId === 'object' && user.id === (shop.ownerId as any)?.id)
-  )
+  // Comparar ObjectIds correctamente
+  const isOwner = user && shop && (() => {
+    // Función para extraer el valor real del ObjectId o User object
+    const extractIdValue = (id: any): string => {
+      if (typeof id === 'string') {
+        return id;
+      } else if (typeof id === 'object' && id !== null) {
+        // Si es un objeto User con propiedad 'id' (caso más común ahora)
+        if (id.id) return String(id.id);
+        // Si es un ObjectId con propiedades comunes
+        if (id.$oid) return id.$oid;
+        if (id._id) return id._id;
+        if (id.toString && typeof id.toString === 'function') {
+          const str = id.toString();
+          if (str !== '[object Object]') return str;
+        }
+      }
+      return String(id);
+    };
+    
+    const userIdStr = extractIdValue(user.id);
+    const ownerIdStr = extractIdValue(shop.ownerId);
+    
+    return userIdStr === ownerIdStr;
+  })()
 
   useEffect(() => {
     if (id) {

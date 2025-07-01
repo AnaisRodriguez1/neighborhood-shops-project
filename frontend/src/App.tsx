@@ -74,6 +74,15 @@ function App() {
                 />
 
                 <Route
+                  path="/tiendas/:shopId/editar"
+                  element={
+                    <ProtectedRoute requiredRole="locatario">
+                      <CrearTiendaPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
                   path="/tiendas/:tiendaId/productos/nuevo"
                   element={
                     <ProtectedRoute>
