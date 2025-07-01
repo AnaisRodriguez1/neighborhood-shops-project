@@ -1,28 +1,29 @@
 # Neighborhood Shops Project
 
 ## Descripción
-Este es el proyecto final del curso de Introducción a Desarrollo Web Móvil, desarrollado como parte de la formación de Ingeniería Civil en Computación e Informática. Es una plataforma de comercio electrónico local que conecta tiendas de barrio con clientes a través de un sistema de pedidos en tiempo real con entrega a domicilio.
+Este es el proyecto final del curso de Introducción a Desarrollo Web/Móvil, desarrollado como parte de la formación de Ingeniería Civil en Computación e Informática. Es una plataforma de comercio electrónico local que conecta tiendas de barrio/kioscos con clientes a través de un sistema de pedidos en tiempo real con entrega a domicilio.
+
+Puedes acceder a la aplicación en funcionamiento en el siguiente enlace:
+[https://frontend-neighborhood-shops-project-production.up.railway.app/](https://frontend-neighborhood-shops-project-production.up.railway.app/)
 
 ## Integrantes del Equipo
 - **Anais Rodríguez**
 - **Manuel Jerez**
 - **Tomás Vargas**
 
-*Ingeniería Civil en Computación e Informática*
-
-## Demostración en Vivo
-Puedes acceder a la aplicación en funcionamiento en el siguiente enlace:
-[https://frontend-neighborhood-shops-project-production.up.railway.app/](https://frontend-neighborhood-shops-project-production.up.railway.app/)
+*Universidad Católica del Norte - Ingeniería Civil en Computación e Informática*
 
 ## Credenciales de Prueba
-Para facilitar la evaluación del proyecto, puedes utilizar las siguientes credenciales de prueba:
 
 ### **Presidente (Administrador General)**
 - **Email:** jose@gmail.com
 - **Contraseña:** Abcd1234
 
-### **Locatario (Dueño de Tienda)**
+### **Locatarios
 - **Email:** anais@gmail.com
+- **Contraseña:** Abcd1234
+
+- **Email:** melina@gmail.com
 - **Contraseña:** Abcd1234
 
 ### **Comprador (Cliente)**
@@ -33,19 +34,60 @@ Para facilitar la evaluación del proyecto, puedes utilizar las siguientes crede
 - **Email:** andres@gmail.com
 - **Contraseña:** Abcd1234
 
-## Variables de Entorno para Desarrollo Local
-Para que el profesor pueda probar el proyecto localmente, debe crear un archivo `.env` en el directorio `backend/` con el siguiente contenido:
+## Instalación y Desarrollo
 
-```env
-PORT=8080
-PORT_TEST=3000
-JWT_SECRET=Est3EsMISE3DsecretoATM
+### 🐳 Instalación con Docker Compose (Recomendado)
 
-MONGODB_URI=mongodb://mongo:nVMUVvFYGLdngixOzEgYqwobVwKdKtYP@switchyard.proxy.rlwy.net:50282/
-MONGODB_TEST=mongodb://UserATMDB:MySecretPassWordProyectoATM@localhost:27017/ATMBD?authSource=admin
+**Prerrequisitos:** Docker y Docker Compose
 
-DEFAULT_LIMIT=10
-DEFAULT_OFFSET=0
+#### **Configuración rápida:**
+
+1. **Clonar el repositorio:**
+   ```bash
+   git clone <repository-url>
+   cd neighborhood-shops-project
+   ```
+
+2. **Crear archivo `.env` en `backend/` con las siguientes variables:**
+   ```env
+   PORT=8080
+   PORT_TEST=3000
+   JWT_SECRET=Est3EsMISE3DsecretoATM
+   
+   MONGODB_URI=mongodb://mongo:nVMUVvFYGLdngixOzEgYqwobVwKdKtYP@switchyard.proxy.rlwy.net:50282/
+   MONGODB_TEST=mongodb://UserATMDB:MySecretPassWordProyectoATM@localhost:27017/ATMBD?authSource=admin
+   
+   DEFAULT_LIMIT=10
+   DEFAULT_OFFSET=0
+   ```
+
+3. **Ejecutar la aplicación:**
+   ```bash
+   docker-compose up --build
+   ```
+
+4. **Acceder a los servicios:**
+   - **Frontend:** http://localhost:5173
+   - **Backend:** http://localhost:8080
+   - **API Docs:** http://localhost:8080/api/docs
+
+### ⚙️ Instalación Manual
+(También se debe crear archivo `.env` en `backend/` con las credenciales de arriba)
+**Prerrequisitos:** Node.js 18+ y npm
+
+#### Backend:
+```bash
+cd backend
+npm install
+# Crear archivo .env con las variables de arriba
+npm run start:dev
+```
+
+#### Frontend:
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 **Nota:** Estas variables incluyen la conexión directa a la base de datos en la nube, por lo que no es necesario configurar MongoDB localmente.
@@ -356,95 +398,3 @@ El sistema incluye datos de prueba completos:
 - Pedidos de ejemplo con diferentes estados
 - Repartidores con información de vehículos
 
-## Instalación y Desarrollo
-
-### Prerrequisitos
-- **Docker y Docker Compose** (para la opción recomendada)
-- Node.js 18+ y npm (para desarrollo manual)
-- *(MongoDB Atlas ya configurado en la nube - no requiere instalación local)*
-
-### 🐳 Opción 1: Desarrollo con Docker (Recomendado para Evaluación)
-
-#### **Pasos para el Profesor:**
-
-1. **Clonar el repositorio:**
-   ```bash
-   git clone <repository-url>
-   cd neighborhood-shops-project
-   ```
-
-2. **Crear archivo `.env` en el directorio `backend/`:**
-   
-   Copiar exactamente las variables mostradas al inicio de este README en un archivo llamado `.env` dentro de la carpeta `backend/`
-
-3. **Ejecutar con Docker:**
-   ```bash
-   docker-compose up --build
-   ```
-
-4. **Acceder a la aplicación:**
-   - **Frontend:** http://localhost:5173
-   - **Backend:** http://localhost:8080
-   - **API Docs:** http://localhost:8080/api/docs
-
-**¡Todo listo! La aplicación usará la base de datos en la nube automáticamente.**
-
-### ⚙️ Opción 2: Desarrollo Manual
-
-#### Backend
-```bash
-cd backend
-npm install
-
-# Crear archivo .env con las variables mostradas al inicio del README
-
-npm run start:dev
-```
-
-#### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### Configuración de Base de Datos
-La base de datos **MongoDB Atlas** ya está configurada y funcionando en la nube. No es necesario instalar MongoDB localmente ni ejecutar Docker Compose para el desarrollo.
-
-Para desarrollo local opcional con MongoDB local:
-```bash
-# En el directorio backend (opcional)
-docker-compose up -d
-```
-
-### Acceso a la Aplicación
-- **Frontend:** http://localhost:5173
-- **Backend:** http://localhost:8080
-- **Documentación API:** http://localhost:8080/api/docs (Swagger)
-
-### 🔧 Solución de Problemas Comunes
-
-#### **Si Docker falla al construir:**
-```bash
-# Limpiar contenedores y volúmenes
-docker-compose down --volumes
-docker system prune -f
-
-# Volver a construir
-docker-compose up --build
-```
-
-#### **Si el backend no se conecta a la base de datos:**
-- Verificar que el archivo `.env` esté en `backend/.env`
-- Verificar que las variables de entorno estén copiadas exactamente como se muestran arriba
-- La URI de MongoDB incluye credenciales y no requiere configuración adicional
-
-#### **Puertos en uso:**
-- Si el puerto 5173 está ocupado: `docker-compose up` usará el siguiente disponible
-- Si el puerto 8080 está ocupado: modificar el puerto en `docker-compose.yml`
-
-Esta arquitectura proporciona escalabilidad, mantenibilidad y una clara separación de responsabilidades entre las diferentes capas del sistema, permitiendo un desarrollo ágil y fácil mantenimiento del código.
-
----
-
-*Proyecto desarrollado para el curso de Introducción a Desarrollo
