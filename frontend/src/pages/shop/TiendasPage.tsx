@@ -166,6 +166,12 @@ export default function TiendasPage() {
                       <span>Delivery disponible</span>
                     </div>
                   )}
+                  
+                  {/* Score de la tienda */}
+                  <div className="flex items-center space-x-2 text-sm text-blue-600 dark:text-blue-400">
+                    <Star className="w-4 h-4" />
+                    <span>Score: {(shop.score || 0).toFixed(3)}</span>
+                  </div>
                 </div>
                 
                 {/* View Shop Button */}
