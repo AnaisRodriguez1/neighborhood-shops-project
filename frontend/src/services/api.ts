@@ -66,8 +66,15 @@ export const apiService = {
   updateShop: async (id: string, shopData: any) => {
     const { data } = await api.patch(`/shops/${id}`, shopData)
     return data
-  },  deleteShop: async (id: string) => {
+  },
+
+  deleteShop: async (id: string) => {
     const { data } = await api.delete(`/shops/${id}`)
+    return data
+  },
+
+  rateShop: async (shopId: string, ratingData: { rating: number; ratingChange: number; userId: string }) => {
+    const { data } = await api.post(`/shops/${shopId}/rate`, ratingData)
     return data
   },
 

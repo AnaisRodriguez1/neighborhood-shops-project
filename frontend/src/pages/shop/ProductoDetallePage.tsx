@@ -15,15 +15,10 @@ export default function ProductoDetallePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  const [rating, setRating] = useState(0)
-  const [hoveredRating, setHoveredRating] = useState(0)
-  const [comment, setComment] = useState("")
-  const [submittingRating, setSubmittingRating] = useState(false)
 
-  const { user, viewMode } = useAuth()
+  const { viewMode } = useAuth()
   const { addToCart } = useCart()
   const isCompradorView = viewMode?.current === "comprador"
-  const canRate = isCompradorView && user
 
   useEffect(() => {
     if (id) {
@@ -53,32 +48,6 @@ export default function ProductoDetallePage() {
     if (product && shop) {
       addToCart(product, shop)
       // Show success notification
-    }
-  }
-
-  const handleSubmitRating = async () => {
-    if (!product || !user || rating === 0) return
-    
-    try {
-      setSubmittingRating(true)
-      // Assuming we have an API endpoint to submit ratings
-      await apiService.rateProduct(product.id, {
-        rating,
-        comment: comment.trim() || undefined,
-        userId: user.id
-      })
-      
-      // Reload product to get updated rating
-      await loadProductAndShop()
-      
-      // Reset form
-      setRating(0)
-      setComment("")
-      alert("¡Calificación enviada exitosamente!")
-    } catch (err: any) {
-      alert("Error al enviar la calificación: " + err.message)
-    } finally {
-      setSubmittingRating(false)
     }
   }
 
@@ -290,69 +259,6 @@ export default function ProductoDetallePage() {
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span>{product.stock === 0 ? "Sin stock" : "Agregar al carrito"}</span>
-                </button>
-              </div>
-            )}
-
-            {/* Rating Section for Buyers */}
-            {canRate && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Calificar Producto</h3>
-                
-                {/* Star Rating */}
-                <div className="mb-4">
-                  <div className="flex items-center space-x-1 mb-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        onClick={() => setRating(star)}
-                        onMouseEnter={() => setHoveredRating(star)}
-                        onMouseLeave={() => setHoveredRating(0)}
-                        className="transition-colors"
-                      >
-                        <Star
-                          className={`w-8 h-8 ${
-                            star <= (hoveredRating || rating)
-                              ? "text-yellow-400 fill-current"
-                              : "text-gray-300 dark:text-gray-600"
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                  {rating > 0 && (
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {rating === 1 && "Muy malo"}
-                      {rating === 2 && "Malo"}
-                      {rating === 3 && "Regular"}
-                      {rating === 4 && "Bueno"}
-                      {rating === 5 && "Excelente"}
-                    </p>
-                  )}
-                </div>
-
-                {/* Comment */}
-                <div className="mb-4">
-                  <textarea
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Escribe un comentario opcional..."
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    rows={3}
-                    maxLength={500}
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {comment.length}/500 caracteres
-                  </p>
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  onClick={handleSubmitRating}
-                  disabled={rating === 0 || submittingRating}
-                  className="w-full bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submittingRating ? "Enviando..." : "Calificar Producto"}
                 </button>
               </div>
             )}

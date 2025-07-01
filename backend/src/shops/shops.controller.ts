@@ -89,4 +89,14 @@ export class ShopsController {
   findMyShops(@GetUser() user: AuthUser) {
     return this.shopsService.findByOwner(user._id.toString());
   }
+
+  @Post(':id/rate')
+  @Auth(ValidRoles.comprador)
+  rateShop(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() ratingData: { rating: number; ratingChange: number; userId: string },
+    @GetUser() user: AuthUser,
+  ) {
+    return this.shopsService.rateShop(id, ratingData, user);
+  }
 }

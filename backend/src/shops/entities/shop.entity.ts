@@ -71,6 +71,14 @@ export class Shop extends Document {
         min:0
     })
     score: number;
+
+//NO EN FORMULARIO
+    @Prop({
+        default:0,
+        min:0
+    })
+    rating: number;
+
 //NO EN FORMULARIO
     @Prop({
         default:0,

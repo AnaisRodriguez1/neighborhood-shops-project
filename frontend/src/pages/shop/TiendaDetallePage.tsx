@@ -18,6 +18,9 @@ export default function TiendaDetallePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [productsPerPage] = useState(12)
+  const [shopRating, setShopRating] = useState(0)
+  const [hoveredRating, setHoveredRating] = useState(0)
+  const [submittingRating, setSubmittingRating] = useState(false)
 
   const { user, viewMode } = useAuth()
   const { addToCart } = useCart()
@@ -67,6 +70,48 @@ export default function TiendaDetallePage() {
       } catch (err: any) {
         alert("Error al eliminar el producto: " + err.message)
       }
+    }
+  }
+
+  const handleRateShop = async (rating: number) => {
+    if (!shop || !user || !isCompradorView) return
+    
+    try {
+      setSubmittingRating(true)
+      
+      // Calcular el cambio en el puntaje
+      let ratingChange = 0
+      if (rating === 1 || rating === 2) {
+        ratingChange = -0.001 // Restar puntos por calificaciones bajas
+      } else if (rating >= 3 && rating <= 5) {
+        ratingChange = 0.001 // Sumar puntos por calificaciones buenas
+      }
+      
+      // Enviar la calificación al backend
+      await apiService.rateShop(shop.id, {
+        rating,
+        ratingChange,
+        userId: user.id
+      })
+      
+      // Recargar la tienda para obtener el rating actualizado
+      await loadShopAndProducts()
+      
+      // Resetear el estado
+      setShopRating(0)
+      setHoveredRating(0)
+      
+      // Mostrar mensaje de éxito
+      const message = rating <= 2 
+        ? `¡Calificación enviada! Se restaron ${Math.abs(ratingChange)} puntos del rating de la tienda.`
+        : `¡Calificación enviada! Se sumaron ${ratingChange} puntos al rating de la tienda.`
+      
+      alert(message)
+    } catch (err: any) {
+      console.error('Error rating shop:', err)
+      alert("Error al enviar la calificación: " + (err.message || "Error desconocido"))
+    } finally {
+      setSubmittingRating(false)
     }
   }
 
@@ -238,6 +283,62 @@ export default function TiendaDetallePage() {
 
       {/* Products/Orders Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* Shop Rating Section for Buyers */}
+        {isCompradorView && user && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Calificar Tienda
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+              Ayuda a otros compradores calificando esta tienda. Tu calificación afecta el puntaje general.
+            </p>
+            
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => handleRateShop(star)}
+                    onMouseEnter={() => setHoveredRating(star)}
+                    onMouseLeave={() => setHoveredRating(0)}
+                    disabled={submittingRating}
+                    className="transition-colors disabled:cursor-not-allowed"
+                  >
+                    <Star
+                      className={`w-8 h-8 ${
+                        star <= (hoveredRating || shopRating)
+                          ? "text-yellow-400 fill-current"
+                          : "text-gray-300 dark:text-gray-600"
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+              
+              {(hoveredRating > 0 || shopRating > 0) && (
+                <div className="text-sm text-gray-600 dark:text-gray-300">
+                  {(() => {
+                    const rating = hoveredRating || shopRating
+                    if (rating === 1) return "Muy malo (-0.001 pts)"
+                    if (rating === 2) return "Malo (-0.001 pts)"
+                    if (rating === 3) return "Regular (+0.001 pts)"
+                    if (rating === 4) return "Bueno (+0.001 pts)"
+                    if (rating === 5) return "Excelente (+0.001 pts)"
+                    return ""
+                  })()}
+                </div>
+              )}
+              
+              {submittingRating && (
+                <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 dark:border-blue-400"></div>
+                  <span className="text-sm">Enviando...</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Orders Management Section */}
         {isOwner && (

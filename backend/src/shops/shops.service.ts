@@ -317,4 +317,46 @@ export class ShopsService {  constructor(
       handleExceptions(error, 'las tiendas del propietario', 'listar');
     }
   }
+
+  async rateShop(shopId: string, ratingData: { rating: number; ratingChange: number; userId: string }, user: AuthUser) {
+    if (!Types.ObjectId.isValid(shopId)) {
+      throw new BadRequestException(`'${shopId}' no es un ObjectId válido.`);
+    }
+
+    try {
+      // Buscar la tienda
+      const shop = await this.shopModel.findById(shopId);
+      if (!shop) {
+        throw new NotFoundException(`Tienda con id '${shopId}' no encontrada`);
+      }
+
+      // Verificar que el usuario no sea el propietario de la tienda
+      if (shop.ownerId.toString() === user._id.toString()) {
+        throw new BadRequestException('No puedes calificar tu propia tienda');
+      }
+
+      // Aplicar el cambio de rating
+      const currentRating = shop.rating || 0;
+      const newRating = Math.max(0, currentRating + ratingData.ratingChange);
+
+      // Actualizar el rating de la tienda
+      const updatedShop = await this.shopModel.findByIdAndUpdate(
+        shopId,
+        { rating: newRating },
+        { new: true }
+      ).populate('ownerId', 'name email');
+
+      console.log(`🌟 Shop ${shop.name} rated ${ratingData.rating} stars by user ${user.name}. Rating changed from ${currentRating} to ${newRating}`);
+
+      return {
+        message: 'Calificación enviada exitosamente',
+        shop: updatedShop,
+        ratingChange: ratingData.ratingChange,
+        newRating: newRating
+      };
+    } catch (error) {
+      console.error('❌ Error rating shop:', error);
+      handleExceptions(error, 'la tienda', 'calificar');
+    }
+  }
 }
