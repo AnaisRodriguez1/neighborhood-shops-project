@@ -359,34 +359,44 @@ El sistema incluye datos de prueba completos:
 ## Instalación y Desarrollo
 
 ### Prerrequisitos
-- Node.js 18+
-- npm o yarn
+- **Docker y Docker Compose** (para la opción recomendada)
+- Node.js 18+ y npm (para desarrollo manual)
 - *(MongoDB Atlas ya configurado en la nube - no requiere instalación local)*
 
-### Opción 1: Desarrollo con Docker (Recomendado)
-```bash
-# Clonar el repositorio
-git clone <repository-url>
-cd neighborhood-shops-project
+### 🐳 Opción 1: Desarrollo con Docker (Recomendado para Evaluación)
 
-# Crear archivo .env en backend/ con las variables mostradas al inicio del README
+#### **Pasos para el Profesor:**
 
-# Ejecutar con Docker
-docker-compose up --build
+1. **Clonar el repositorio:**
+   ```bash
+   git clone <repository-url>
+   cd neighborhood-shops-project
+   ```
 
-# Acceder a:
-# Frontend: http://localhost:5173
-# Backend: http://localhost:8080
-# API Docs: http://localhost:8080/api/docs
-```
+2. **Crear archivo `.env` en el directorio `backend/`:**
+   
+   Copiar exactamente las variables mostradas al inicio de este README en un archivo llamado `.env` dentro de la carpeta `backend/`
 
-### Opción 2: Desarrollo Manual
+3. **Ejecutar con Docker:**
+   ```bash
+   docker-compose up --build
+   ```
+
+4. **Acceder a la aplicación:**
+   - **Frontend:** http://localhost:5173
+   - **Backend:** http://localhost:8080
+   - **API Docs:** http://localhost:8080/api/docs
+
+**¡Todo listo! La aplicación usará la base de datos en la nube automáticamente.**
+
+### ⚙️ Opción 2: Desarrollo Manual
+
 #### Backend
 ```bash
 cd backend
 npm install
 
-# Crear archivo .env en el directorio backend con las variables mostradas al inicio del README
+# Crear archivo .env con las variables mostradas al inicio del README
 
 npm run start:dev
 ```
@@ -411,6 +421,27 @@ docker-compose up -d
 - **Frontend:** http://localhost:5173
 - **Backend:** http://localhost:8080
 - **Documentación API:** http://localhost:8080/api/docs (Swagger)
+
+### 🔧 Solución de Problemas Comunes
+
+#### **Si Docker falla al construir:**
+```bash
+# Limpiar contenedores y volúmenes
+docker-compose down --volumes
+docker system prune -f
+
+# Volver a construir
+docker-compose up --build
+```
+
+#### **Si el backend no se conecta a la base de datos:**
+- Verificar que el archivo `.env` esté en `backend/.env`
+- Verificar que las variables de entorno estén copiadas exactamente como se muestran arriba
+- La URI de MongoDB incluye credenciales y no requiere configuración adicional
+
+#### **Puertos en uso:**
+- Si el puerto 5173 está ocupado: `docker-compose up` usará el siguiente disponible
+- Si el puerto 8080 está ocupado: modificar el puerto en `docker-compose.yml`
 
 Esta arquitectura proporciona escalabilidad, mantenibilidad y una clara separación de responsabilidades entre las diferentes capas del sistema, permitiendo un desarrollo ágil y fácil mantenimiento del código.
 
