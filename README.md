@@ -363,7 +363,25 @@ El sistema incluye datos de prueba completos:
 - npm o yarn
 - *(MongoDB Atlas ya configurado en la nube - no requiere instalación local)*
 
-### Backend
+### Opción 1: Desarrollo con Docker (Recomendado)
+```bash
+# Clonar el repositorio
+git clone <repository-url>
+cd neighborhood-shops-project
+
+# Crear archivo .env en backend/ con las variables mostradas al inicio del README
+
+# Ejecutar con Docker
+docker-compose up --build
+
+# Acceder a:
+# Frontend: http://localhost:5173
+# Backend: http://localhost:8080
+# API Docs: http://localhost:8080/api/docs
+```
+
+### Opción 2: Desarrollo Manual
+#### Backend
 ```bash
 cd backend
 npm install
@@ -373,7 +391,7 @@ npm install
 npm run start:dev
 ```
 
-### Frontend
+#### Frontend
 ```bash
 cd frontend
 npm install
