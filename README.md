@@ -49,6 +49,34 @@ DEFAULT_OFFSET=0
 ```
 
 **Nota:** Estas variables incluyen la conexión directa a la base de datos en la nube, por lo que no es necesario configurar MongoDB localmente.
+# Instalación y Desarrollo SIN DOCKER (Si quiere probar la dockerización ir a la rama FIX)
+
+### Prerrequisitos
+- Node.js 18+
+- npm o yarn
+- *(MongoDB Atlas ya configurado en la nube - no requiere instalación local)*
+
+### Backend
+```bash
+cd backend
+npm install
+
+# Crear archivo .env en el directorio backend con las variables mostradas al inicio del README
+
+npm run start:dev
+```
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Acceso a la Aplicación
+- **Frontend:** http://localhost:5173
+- **Backend:** http://localhost:8080
+- **Documentación API:** http://localhost:8080/api/docs (Swagger)
 
 ## Base de Datos
 El proyecto utiliza **MongoDB Atlas** (MongoDB en la nube) como base de datos principal, lo que garantiza alta disponibilidad y escalabilidad sin necesidad de configuración local de base de datos.
@@ -355,47 +383,3 @@ El sistema incluye datos de prueba completos:
 - Usuarios de prueba para todos los roles
 - Pedidos de ejemplo con diferentes estados
 - Repartidores con información de vehículos
-
-## Instalación y Desarrollo
-
-### Prerrequisitos
-- Node.js 18+
-- npm o yarn
-- *(MongoDB Atlas ya configurado en la nube - no requiere instalación local)*
-
-### Backend
-```bash
-cd backend
-npm install
-
-# Crear archivo .env en el directorio backend con las variables mostradas al inicio del README
-
-npm run start:dev
-```
-
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### Configuración de Base de Datos
-La base de datos **MongoDB Atlas** ya está configurada y funcionando en la nube. No es necesario instalar MongoDB localmente ni ejecutar Docker Compose para el desarrollo.
-
-Para desarrollo local opcional con MongoDB local:
-```bash
-# En el directorio backend (opcional)
-docker-compose up -d
-```
-
-### Acceso a la Aplicación
-- **Frontend:** http://localhost:5173
-- **Backend:** http://localhost:8080
-- **Documentación API:** http://localhost:8080/api/docs (Swagger)
-
-Esta arquitectura proporciona escalabilidad, mantenibilidad y una clara separación de responsabilidades entre las diferentes capas del sistema, permitiendo un desarrollo ágil y fácil mantenimiento del código.
-
----
-
-*Proyecto desarrollado para el curso de Introducción a Desarrollo
