@@ -9,7 +9,7 @@ interface AuthContextType {
   user: User | null
   viewMode: ViewMode | null
   login: (email: string, password: string) => Promise<void>
-  register: (userData: any) => Promise<void>
+  register: (userData: any) => Promise<any>
   logout: () => void
   switchToComprador: () => void
   switchToOriginalRole: () => void
@@ -67,26 +67,21 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const register = async (userData: any) => {
     try {
-      // Prepare the registration data
-      const registrationData: any = {
+      // Prepare the registration data according to CreateUserDto
+      const registrationData = {
         email: userData.email,
         password: userData.password,
         name: userData.name,
         rol: userData.rol,
       }
 
-      // Add role-specific data if provided
-      if (userData.deliveryInfo) {
-        registrationData.deliveryInfo = userData.deliveryInfo
-      }
-      if (userData.shopData) {
-        registrationData.shopData = userData.shopData
-      }
-
-      await apiService.register(registrationData)
+      const registrationResponse = await apiService.register(registrationData)
 
       // Hacer login automático después del registro
       await login(userData.email, userData.password)
+
+      // Return the registration response for additional processing
+      return registrationResponse
     } catch (error) {
       throw error
     }

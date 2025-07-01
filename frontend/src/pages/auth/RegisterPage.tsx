@@ -3,8 +3,9 @@
 import type React from "react"
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Eye, EyeOff, Mail, Lock, User, UserCheck, Truck, MapPin, Phone, Clock, Tag } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, User, UserCheck, Truck, MapPin, Phone, Clock, Image } from "lucide-react"
 import { useAuth } from "../../context/AuthContext"
+import { api } from "../../services/api"
 
 export default function RegisterPage() {  const [formData, setFormData] = useState({
     name: "",
@@ -23,7 +24,9 @@ export default function RegisterPage() {  const [formData, setFormData] = useSta
     shopEmail: "",
     shopSchedule: "",
     shopDelivery: true,
-    shopCategories: "",
+    shopCategories: [] as string[],
+    shopIconImage: "",
+    shopBannerImage: "",
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -85,19 +88,22 @@ export default function RegisterPage() {  const [formData, setFormData] = useSta
       if (!formData.shopAddress.trim()) {
         errors.shopAddress = "La dirección de la tienda es obligatoria."
       }
-      if (!formData.shopPhone.trim()) {
-        errors.shopPhone = "El teléfono de la tienda es obligatorio."
-      }
-      if (!formData.shopEmail.trim()) {
-        errors.shopEmail = "El email de la tienda es obligatorio."
-      } else if (!validateEmail(formData.shopEmail)) {
-        errors.shopEmail = "El email de la tienda no es válido."
-      }
-      if (!formData.shopSchedule.trim()) {
-        errors.shopSchedule = "El horario de la tienda es obligatorio."
-      }
-      if (!formData.shopCategories.trim()) {
+      if (!formData.shopCategories.length) {
         errors.shopCategories = "Las categorías de la tienda son obligatorias."
+      } else {
+        // Validate categories against backend DTO
+        const validCategories = ['comida','electronica','ropa','libros','hogar','mascotas','belleza','farmacia','papeleria','ferreteria','jardineria','juguetes','deportes','otro']
+        const invalidCategories = formData.shopCategories.filter(cat => !validCategories.includes(cat))
+        
+        if (invalidCategories.length > 0) {
+          errors.shopCategories = `Categorías inválidas: ${invalidCategories.join(', ')}. Usa solo: ${validCategories.join(', ')}`
+        }
+      }
+      if (!formData.shopIconImage.trim()) {
+        errors.shopIconImage = "La imagen del ícono de la tienda es obligatoria."
+      }
+      if (!formData.shopBannerImage.trim()) {
+        errors.shopBannerImage = "La imagen del banner de la tienda es obligatoria."
       }
     }    setFieldErrors(errors)
     return Object.keys(errors).length === 0  }
@@ -110,30 +116,59 @@ export default function RegisterPage() {  const [formData, setFormData] = useSta
 
     setIsLoading(true)
     try {
-      // Prepare base user data
-      const userData: any = {
+      // Prepare base user data according to CreateUserDto
+      const userData = {
         name: formData.name,
         email: formData.email,
         password: formData.password,
         rol: formData.rol,
-      }      // Add role-specific data
-      if (formData.rol === "repartidor") {
-        // Para repartidores, solo guardamos la información básica del usuario
-        // La información de delivery se puede configurar más tarde en el perfil
-        // cuando el usuario proporcione coordenadas o active la geolocalización
-      } else if (formData.rol === "locatario") {        userData.shopData = {
-          name: formData.shopName,
-          description: formData.shopDescription,
-          address: formData.shopAddress,
-          phone: formData.shopPhone,
-          email: formData.shopEmail,
-          schedule: formData.shopSchedule,
-          deliveryAvailable: formData.shopDelivery,
-          categories: formData.shopCategories.split(',').map(cat => cat.trim()),
+      }
+
+      // Register the user first (this also does automatic login)
+      await register(userData)
+      
+      // If user is locatario, create the shop after successful registration
+      if (formData.rol === "locatario") {
+        try {
+          console.log('Intentando crear tienda para locatario...')
+          
+          // Wait a moment to ensure login is complete
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          // Prepare shop data according to CreateShopDto
+          const shopData = {
+            name: formData.shopName,
+            description: formData.shopDescription,
+            address: formData.shopAddress,
+            deliveryAvailable: formData.shopDelivery,
+            categories: formData.shopCategories,
+            images: [formData.shopIconImage, formData.shopBannerImage]
+          }
+
+          console.log('Datos de la tienda a enviar:', shopData)
+          console.log('Token disponible:', localStorage.getItem("token") ? 'Sí' : 'No')
+
+          // Create shop using the shops endpoint with configured axios instance
+          const response = await api.post('/shops', shopData)
+
+          console.log('Respuesta de creación de tienda:', response.status, response.data)
+
+          if (response.status >= 400) {
+            throw new Error(response.data?.message || 'Error al crear la tienda')
+          }
+          
+          console.log('Tienda creada exitosamente')
+        } catch (shopError: any) {
+          console.error('Shop creation error:', shopError)
+          console.error('Error response:', shopError?.response?.data)
+          console.error('Error status:', shopError?.response?.status)
+          
+          // Note: User was created successfully, but shop creation failed
+          const errorMsg = shopError?.response?.data?.message || shopError?.message || 'Error desconocido al crear la tienda'
+          setError(`Usuario creado, pero hubo un error al crear la tienda: ${errorMsg}. Puedes crearla desde tu perfil.`)
         }
       }
 
-      await register(userData)
       navigate("/dashboard")
     } catch (err: any) {
       console.error('Registration error:', err)
@@ -147,6 +182,15 @@ export default function RegisterPage() {  const [formData, setFormData] = useSta
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
+    }))
+  }
+
+  const handleCategoryChange = (category: string) => {
+    setFormData(prev => ({
+      ...prev,
+      shopCategories: prev.shopCategories.includes(category)
+        ? prev.shopCategories.filter(cat => cat !== category)
+        : [...prev.shopCategories, category]
     }))
   }
   return (
@@ -452,25 +496,74 @@ export default function RegisterPage() {  const [formData, setFormData] = useSta
 
                 {/* Shop Categories */}
                 <div>
-                  <label htmlFor="shopCategories" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Categorías (separadas por comas)
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Categorías de la tienda
                   </label>
-                  <div className="relative">
-                    <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
-                    <input
-                      id="shopCategories"
-                      name="shopCategories"
-                      type="text"
-                      value={formData.shopCategories}
-                      onChange={handleChange}
-                      className={`pl-10 w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                        fieldErrors.shopCategories ? "border-red-500 dark:border-red-400" : "border-gray-300 dark:border-gray-600"
-                      }`}
-                      placeholder="Alimentación, Bebidas, Snacks"
-                    />
+                  <div className="grid grid-cols-2 gap-2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                    {['comida','electronica','ropa','libros','hogar','mascotas','belleza','farmacia','papeleria','ferreteria','jardineria','juguetes','deportes','otro'].map((category) => (
+                      <label key={category} className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.shopCategories.includes(category)}
+                          onChange={() => handleCategoryChange(category)}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">
+                          {category}
+                        </span>
+                      </label>
+                    ))}
                   </div>
                   {fieldErrors.shopCategories && (
                     <p className="mt-1 text-red-600 dark:text-red-400 text-sm">{fieldErrors.shopCategories}</p>
+                  )}
+                </div>
+
+                {/* Shop Icon Image */}
+                <div>
+                  <label htmlFor="shopIconImage" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    URL del ícono de la tienda
+                  </label>
+                  <div className="relative">
+                    <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
+                    <input
+                      id="shopIconImage"
+                      name="shopIconImage"
+                      type="url"
+                      value={formData.shopIconImage}
+                      onChange={handleChange}
+                      className={`pl-10 w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
+                        fieldErrors.shopIconImage ? "border-red-500 dark:border-red-400" : "border-gray-300 dark:border-gray-600"
+                      }`}
+                      placeholder="https://ejemplo.com/icono-tienda.png"
+                    />
+                  </div>
+                  {fieldErrors.shopIconImage && (
+                    <p className="mt-1 text-red-600 dark:text-red-400 text-sm">{fieldErrors.shopIconImage}</p>
+                  )}
+                </div>
+
+                {/* Shop Banner Image */}
+                <div>
+                  <label htmlFor="shopBannerImage" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    URL del banner/dashboard de la tienda
+                  </label>
+                  <div className="relative">
+                    <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
+                    <input
+                      id="shopBannerImage"
+                      name="shopBannerImage"
+                      type="url"
+                      value={formData.shopBannerImage}
+                      onChange={handleChange}
+                      className={`pl-10 w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
+                        fieldErrors.shopBannerImage ? "border-red-500 dark:border-red-400" : "border-gray-300 dark:border-gray-600"
+                      }`}
+                      placeholder="https://ejemplo.com/banner-tienda.png"
+                    />
+                  </div>
+                  {fieldErrors.shopBannerImage && (
+                    <p className="mt-1 text-red-600 dark:text-red-400 text-sm">{fieldErrors.shopBannerImage}</p>
                   )}
                 </div>
 
