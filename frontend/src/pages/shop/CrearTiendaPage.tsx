@@ -5,7 +5,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { apiService } from "../../services/api"
 import { useAuth } from "../../context/AuthContext"
-import { Store, MapPin, Phone, Mail, Clock, Truck } from "lucide-react"
+import { Store, MapPin, Phone, Mail, Clock, Truck, Image } from "lucide-react"
 
 export default function CrearTiendaPage() {  const [formData, setFormData] = useState({
     name: "",
@@ -15,6 +15,8 @@ export default function CrearTiendaPage() {  const [formData, setFormData] = use
     email: "",
     schedule: "",
     deliveryAvailable: false,
+    categories: [] as string[],
+    images: ["", ""] as string[], // [icon, banner]
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -38,7 +40,17 @@ export default function CrearTiendaPage() {  const [formData, setFormData] = use
     setError("")
 
     try {
-      await apiService.createShop(formData)
+      // Prepare shop data according to CreateShopDto
+      const shopData = {
+        name: formData.name,
+        description: formData.description,
+        address: formData.address,
+        deliveryAvailable: formData.deliveryAvailable,
+        categories: formData.categories,
+        images: formData.images
+      }
+      
+      await apiService.createShop(shopData)
       navigate("/dashboard")
     } catch (err: any) {
       setError(err.message || "Error al crear la tienda")
@@ -52,6 +64,22 @@ export default function CrearTiendaPage() {  const [formData, setFormData] = use
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+    }))
+  }
+
+  const handleCategoryChange = (category: string) => {
+    setFormData(prev => ({
+      ...prev,
+      categories: prev.categories.includes(category)
+        ? prev.categories.filter(cat => cat !== category)
+        : [...prev.categories, category]
+    }))
+  }
+
+  const handleImageChange = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.map((img, i) => i === index ? value : img)
     }))
   }
   return (
@@ -179,6 +207,68 @@ export default function CrearTiendaPage() {  const [formData, setFormData] = use
                   onChange={handleChange}
                   className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Ej: Lun-Vie 9:00-18:00, Sáb 9:00-14:00"
+                />
+              </div>
+            </div>
+
+            {/* Categories */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Categorías de la tienda *
+              </label>
+              <div className="grid grid-cols-2 gap-2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                {['comida','electronica','ropa','libros','hogar','mascotas','belleza','farmacia','papeleria','ferreteria','jardineria','juguetes','deportes','otro'].map((category) => (
+                  <label key={category} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.categories.includes(category)}
+                      onChange={() => handleCategoryChange(category)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">
+                      {category}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Shop Icon Image */}
+            <div>
+              <label htmlFor="iconImage" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                URL del ícono de la tienda *
+              </label>
+              <div className="relative">
+                <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
+                <input
+                  id="iconImage"
+                  name="iconImage"
+                  type="url"
+                  required
+                  value={formData.images[0]}
+                  onChange={(e) => handleImageChange(0, e.target.value)}
+                  className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="https://ejemplo.com/icono-tienda.png"
+                />
+              </div>
+            </div>
+
+            {/* Shop Banner Image */}
+            <div>
+              <label htmlFor="bannerImage" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                URL del banner/dashboard de la tienda *
+              </label>
+              <div className="relative">
+                <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
+                <input
+                  id="bannerImage"
+                  name="bannerImage"
+                  type="url"
+                  required
+                  value={formData.images[1]}
+                  onChange={(e) => handleImageChange(1, e.target.value)}
+                  className="pl-10 w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="https://ejemplo.com/banner-tienda.png"
                 />
               </div>
             </div>            {/* Delivery */}
