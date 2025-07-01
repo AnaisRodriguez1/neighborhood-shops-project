@@ -49,9 +49,9 @@ export default function TiendasPage() {
     navigate(`/tiendas/${shopId}`);
   };
 
-  // Ordenar tiendas por score (de mayor a menor)
+  // Ordenar tiendas por score (de menor a mayor)
   const sortedShops = [...shops].sort(
-    (a, b) => (b.score || 0) - (a.score || 0)
+    (a, b) => (a.score || 0) - (b.score || 0)
   );
   if (loading && page === 1) {
     return (
@@ -76,7 +76,7 @@ export default function TiendasPage() {
             Explorar Tiendas
           </h1>{" "}
           <p className="text-gray-600 dark:text-gray-300 mt-2">
-            Descubre productos únicos en tiendas locales (ordenadas por score)
+            Descubre productos únicos en tiendas locales (ordenadas por score ascendente)
           </p>
         </div>
 

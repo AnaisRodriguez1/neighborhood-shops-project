@@ -4,76 +4,58 @@ import { apiService } from "../services/api"
 import { useCart } from "../context/CartContext"
 import { useAuth } from "../context/AuthContext"
 import { useOrderNotifications } from "../hooks/useOrderNotifications"
-import { ShoppingCart, Package, Star, Plus } from "lucide-react"
-import { Product, Tienda } from "../types"
+import { ShoppingCart, Star, MapPin, Truck, Store } from "lucide-react"
+import { Tienda } from "../types"
 import { capitalizeWords } from '../utils/format';
 import OrderNotifications from "../components/OrderNotifications"
 
 export default function HomePage() {
-  const [products, setProducts] = useState<Product[]>([])
   const [shops, setShops] = useState<Tienda[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const { addToCart, getTotalItems } = useCart()
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const { getTotalItems } = useCart()
   const { user } = useAuth()
-  const { notifications, addNotification, dismissNotification } = useOrderNotifications()
+  const { notifications, dismissNotification } = useOrderNotifications()
   const navigate = useNavigate()
 
   useEffect(() => {
-    loadProductsAndShops()
-  }, [])
-  const loadProductsAndShops = async () => {
+    loadShops()
+  }, [page])
+
+  const loadShops = async () => {
     try {
       setLoading(true)
-      const [productsResponse, shopsResponse] = await Promise.all([
-        apiService.getProducts(),
-        apiService.getShops()
-      ])
-      
-      setProducts(productsResponse)
-      setShops(shopsResponse.data || shopsResponse)
+      const response = await apiService.getShops(page, 5) // Paginación de 5 tiendas
+
+      if (page === 1) {
+        setShops(response.data || response)
+      } else {
+        setShops((prev) => [...prev, ...(response.data || response)])
+      }
+
+      setHasMore((response.data || response).length === 5)
     } catch (err) {
-      setError("Error al cargar los Products")
+      setError("Error al cargar las tiendas")
+      console.error(err)
     } finally {
       setLoading(false)
     }
   }
-  const handleAddToCart = (product: Product) => {
-    // Find the shop for this product - handle both string ID and object with ID
-    let shopId: string
-    if (typeof product.shopId === 'string') {
-      shopId = product.shopId
-    } else if (product.shopId && typeof product.shopId === 'object' && 'id' in product.shopId) {
-      shopId = (product.shopId as any).id
-    } else {
-      return
-    }
-    
-    const shop = shops.find(s => s.id === shopId)
-    
-    if (shop) {
-      addToCart(product, shop)
-      addNotification(`${product.name} agregado al carrito`, 'success')
-    }
-  }
-  
-  const getShopName = (shopId: string | any) => {
-    let actualShopId: string
-    if (typeof shopId === 'string') {
-      actualShopId = shopId
-    } else if (shopId && typeof shopId === 'object' && 'id' in shopId) {
-      actualShopId = shopId.id
-    } else {
-      return "Tienda"
-    }
-    
-    const shop = shops.find(s => s.id === actualShopId)
-    return capitalizeWords(shop?.name || "Tienda")
+
+  const loadMore = () => {
+    setPage((prev) => prev + 1)
   }
 
-  const handleProductClick = (productId: string) => {
-    navigate(`/productos/${productId}`)
+  const handleShopClick = (shopId: string) => {
+    navigate(`/tiendas/${shopId}`)
   }
+
+  // Ordenar tiendas por score (de menor a mayor)
+  const sortedShops = [...shops].sort(
+    (a, b) => (a.score || 0) - (b.score || 0)
+  )
 
   return (
   <div className="min-h-screen app-container">
@@ -104,22 +86,22 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Products Section */}
+      {/* Shops Section */}
       <div className="py-16 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Products Destacados
+              Tiendas Locales
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300">
-              Descubre la variedad de Products disponibles en nuestras tiendas locales
+              Descubre tiendas locales y apoya a los negocios de tu comunidad
             </p>
           </div>
 
           {loading && (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-300">Cargando Products...</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-300">Cargando tiendas...</p>
             </div>
           )}
 
@@ -129,95 +111,113 @@ export default function HomePage() {
             </div>
           )}
 
-          {!loading && !error && products.length > 0 && (            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.slice(0, 12).map((product) => (
+          {!loading && !error && sortedShops.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortedShops.map((shop) => (
                 <div
-                  key={product.id}
-                  onClick={() => handleProductClick(product.id)}
+                  key={shop.id}
+                  onClick={() => handleShopClick(shop.id)}
                   className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 transform"
-                >{/* Product Image */}
-                    <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center">
-                      {product.images && product.images.length > 0 ? (
-                        <img
-                          src={product.images[0]}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `
-                                <div class="text-gray-500 dark:text-gray-400 text-center">
-                                  <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                                  </svg>
-                                  <span class="text-sm">Sin imagen</span>
-                                </div>
-                              `;
-                            }
-                          }}
-                        />
-                      ) : product.image ? (
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="text-gray-500 dark:text-gray-400 text-center">
-                          <Package className="w-12 h-12 mx-auto mb-2" />
-                          <span className="text-sm">Sin imagen</span>
-                        </div>
-                      )}
+                >
+                  {/* Shop Image */}
+                  <div className="h-48 relative overflow-hidden">
+                    {shop.images && shop.images[1] ? (
+                      // Imagen de banner (dashboard) si está disponible
+                      <img
+                        src={shop.images[1]}
+                        alt={`Banner de ${shop.name}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback si la imagen no carga
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement!.querySelector('.fallback-banner')!.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    {/* Fallback banner si no hay imagen */}
+                    <div className={`fallback-banner absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center ${shop.images && shop.images[1] ? 'hidden' : ''}`}>
+                      <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <span className="text-2xl font-bold text-white">
+                          {shop.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
                     </div>
+                    
+                    {/* Profile Image (icono) overlay */}
+                    <div className="absolute bottom-4 left-4">
+                      {shop.images && shop.images[0] ? (
+                        <img
+                          src={shop.images[0]}
+                          alt={`Logo de ${shop.name}`}
+                          className="w-16 h-16 rounded-full border-4 border-white shadow-lg object-cover"
+                          onError={(e) => {
+                            // Fallback si la imagen no carga
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement!.querySelector('.fallback-profile')!.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      {/* Fallback profile si no hay imagen */}
+                      <div className={`fallback-profile w-16 h-16 bg-white bg-opacity-90 rounded-full border-4 border-white shadow-lg flex items-center justify-center ${shop.images && shop.images[0] ? 'hidden' : ''}`}>
+                        <span className="text-xl font-bold text-gray-800">
+                          {shop.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-                  {/* Product Info */}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2 min-h-[3.5rem] flex items-center">
-                        {product.name}
+                  <div className="p-6">
+                    {/* Shop Header */}
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        {capitalizeWords(shop.name)}
                       </h3>
-                      {product.rating && (
-                        <div className="flex items-center ml-2">
+                      {shop.rating !== undefined && (
+                        <div className="flex items-center space-x-1">
                           <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                          <span className="text-sm text-gray-600 dark:text-gray-300 ml-1">
-                            {product.rating.toFixed(1)}
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {shop.rating.toFixed(1)}
                           </span>
                         </div>
                       )}
                     </div>
-
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      {getShopName(product.shopId)}
+                    <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
+                      {shop.description}
                     </p>
 
-                    {product.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
-                        {product.description}
-                      </p>
-                    )}
+                    {/* Shop Info */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                        <MapPin className="w-4 h-4" />
+                        <span className="truncate">{shop.address}</span>
+                      </div>
 
-                    <div className="flex items-center justify-center">
-
-                      {/* Botón agregar al carrito, NEWCESARIO QUE HAYA STOCK DEL PRODUCTO */}
-                      {product.stock > 0 && (
-                        <button
-                          onClick={() => handleAddToCart(product)}
-                          className={`p-2 rounded-full transition-colors ${
-                            user && user.role === "comprador" 
-                              ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                              : "bg-gray-400 hover:bg-gray-500 text-white"
-                          }`}
-                          title={user && user.role === "comprador" ? "Agregar al carrito" : "Debes loguearte como comprador"}
-                        >
-                          <Plus className="w-5 h-5" />
-                        </button>
+                      {shop.deliveryAvailable && (
+                        <div className="flex items-center space-x-2 text-sm text-green-600 dark:text-green-400">
+                          <Truck className="w-4 h-4" />
+                          <span>Delivery disponible</span>
+                        </div>
                       )}
+                      
+                      {/* Score de la tienda */}
+                      <div className="flex items-center space-x-2 text-sm text-blue-600 dark:text-blue-400">
+                        <Star className="w-4 h-4" />
+                        <span>Score: {(shop.score || 0).toFixed(3)}</span>
+                      </div>
+                    </div>
+                    
+                    {/* View Shop Button */}
+                    <div className="mt-4">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShopClick(shop.id);
+                        }}
+                        className="w-full bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium text-sm flex items-center justify-center space-x-2"
+                      >
+                        <Store className="w-4 h-4" />
+                        <span>Ver Tienda</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -225,7 +225,25 @@ export default function HomePage() {
             </div>
           )}
 
-          {!loading && !error && products.length > 12 && (
+          {/* Load More */}
+          {hasMore && !loading && (
+            <div className="text-center mt-8">
+              <button
+                onClick={loadMore}
+                className="bg-blue-600 dark:bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium"
+              >
+                Cargar Más Tiendas
+              </button>
+            </div>
+          )}
+
+          {loading && page > 1 && (
+            <div className="text-center mt-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+            </div>
+          )}
+
+          {!loading && !error && sortedShops.length > 0 && (
             <div className="text-center mt-12">
               <Link
                 to="/tiendas"
@@ -233,6 +251,21 @@ export default function HomePage() {
               >
                 Ver Todas las Tiendas
               </Link>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && sortedShops.length === 0 && (
+            <div className="text-center py-12">
+              <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Store className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                No hay tiendas disponibles
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Aún no hay tiendas registradas en la plataforma.
+              </p>
             </div>
           )}
         </div>

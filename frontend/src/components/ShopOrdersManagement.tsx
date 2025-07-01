@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Package, Eye, RefreshCw, AlertCircle } from 'lucide-react'
+import { Package, Eye, RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Order, Tienda } from '../types'
 import { apiService } from '../services/api'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -38,6 +38,10 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [ordersPerPage] = useState(5)
 
   // WebSocket for real-time updates
   const { joinShopRoom } = useWebSocket({
@@ -307,6 +311,23 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
     ? orders 
     : orders.filter(order => order.status === statusFilter)
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredOrders.length / ordersPerPage)
+  const startIndex = (currentPage - 1) * ordersPerPage
+  const endIndex = startIndex + ordersPerPage
+  const currentOrders = filteredOrders.slice(startIndex, endIndex)
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [statusFilter])
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page)
+    // Scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const orderCounts = {
     pendiente: orders.filter(o => o.status === 'pendiente').length,
     confirmado: orders.filter(o => o.status === 'confirmado').length,
@@ -354,6 +375,12 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
           </h2>
           <p className="text-gray-600 dark:text-gray-300 mt-1">
             Total de pedidos: {orders.length}
+            {filteredOrders.length !== orders.length && (
+              <span> • Mostrando: {filteredOrders.length}</span>
+            )}
+            {filteredOrders.length > 0 && (
+              <span> • Página {currentPage} de {totalPages}</span>
+            )}
           </p>
         </div>
         <button
@@ -432,7 +459,7 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredOrders.map((order) => (
+                {currentOrders.map((order) => (
                   <tr key={order._id || order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -485,6 +512,45 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center space-x-2 mt-6">
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Anterior</span>
+              </button>
+
+              <div className="flex space-x-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={`page-${page}`}
+                    onClick={() => goToPage(page)}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      currentPage === page
+                        ? "bg-blue-600 dark:bg-blue-500 text-white"
+                        : "text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span>Siguiente</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
