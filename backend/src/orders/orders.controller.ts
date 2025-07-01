@@ -157,4 +157,10 @@ export class OrdersController {
   fixOrphanedOrders() {
     return this.ordersService.fixOrphanedOrders();
   }
+
+  @Post('fix-objectids')
+  @Auth(ValidRoles.presidente)
+  async fixObjectIds() {
+    return this.ordersService.fixObjectIdFields();
+  }
 }

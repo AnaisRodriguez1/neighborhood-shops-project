@@ -107,9 +107,16 @@ export default function OrderStatusManager({
   const nextStatuses = statusFlow[currentStatus] || []
 
   // Si es repartidor, solo puede cambiar de "en_entrega" a "entregado"
-  const availableStatuses = isDelivery && userRole === 'repartidor'
-    ? nextStatuses.filter(status => status === 'entregado' && currentStatus === 'en_entrega')
-    : nextStatuses
+  // Si es locatario, no puede cambiar a "en_entrega" (solo los repartidores pueden tomar pedidos)
+  let availableStatuses = nextStatuses;
+  
+  if (isDelivery && userRole === 'repartidor') {
+    // Repartidores solo pueden marcar como entregado si están en "en_entrega"
+    availableStatuses = nextStatuses.filter(status => status === 'entregado' && currentStatus === 'en_entrega');
+  } else if (userRole === 'locatario') {
+    // Locatarios no pueden cambiar directamente a "en_entrega"
+    availableStatuses = nextStatuses.filter(status => status !== 'en_entrega');
+  }
 
   return (
     <div className="space-y-4">

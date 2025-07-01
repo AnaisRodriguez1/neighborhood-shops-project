@@ -364,6 +364,7 @@ export default function MisPedidosPage() {
             isOpen={true}
             onClose={() => setSelectedOrder(null)}
             canUpdateStatus={false}
+            userRole="comprador"
           />
         )}
       </div>

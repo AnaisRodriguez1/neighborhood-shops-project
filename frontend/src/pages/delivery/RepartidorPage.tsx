@@ -809,6 +809,7 @@ export default function RepartidorPage() {
           }}
           canUpdateStatus={false}
           canAssignDelivery={false}
+          userRole="repartidor"
         />
       </div>
     </div>

@@ -237,9 +237,19 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
       await apiService.updateOrderStatus(orderId, newStatus)
       // Order will be updated via WebSocket
       setIsModalOpen(false)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating order status:', err)
-      alert('Error al actualizar el estado del pedido')
+      
+      // Manejar errores específicos del backend
+      if (err.response?.status === 403) {
+        const message = err.response?.data?.message || 'No tienes permisos para realizar esta acción'
+        alert(message)
+      } else if (err.response?.status === 400) {
+        const message = err.response?.data?.message || 'Solicitud inválida'
+        alert(message)
+      } else {
+        alert('Error al actualizar el estado del pedido')
+      }
     }
   }
 
@@ -490,6 +500,7 @@ export default function ShopOrdersManagement({ shop }: ShopOrdersManagementProps
         onAssignDelivery={handleAssignDelivery}
         canUpdateStatus={true}
         canAssignDelivery={true}
+        userRole="locatario"
       />
     </div>
   )

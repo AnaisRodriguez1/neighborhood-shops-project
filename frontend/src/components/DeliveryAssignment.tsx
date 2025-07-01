@@ -21,13 +21,15 @@ interface DeliveryAssignmentProps {
   onAssign: (deliveryPersonId: string) => Promise<void>
   canAssign: boolean
   orderStatus: string
+  userRole?: string
 }
 
 export default function DeliveryAssignment({
   currentDeliveryPerson,
   onAssign,
   canAssign,
-  orderStatus
+  orderStatus,
+  userRole = 'comprador'
 }: DeliveryAssignmentProps) {
   const [deliveryPersons, setDeliveryPersons] = useState<DeliveryPerson[]>([])
   const [loading, setLoading] = useState(false)
@@ -106,7 +108,29 @@ export default function DeliveryAssignment({
               Asignación de Repartidor
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              El pedido debe estar "Listo" para asignar un repartidor
+              {orderStatus === 'listo' 
+                ? 'Los repartidores pueden tomar este pedido'
+                : 'El pedido debe estar "Listo" para que los repartidores puedan tomarlo'
+              }
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Si es locatario y el pedido está listo, mostrar mensaje informativo
+  if (userRole === 'locatario' && orderStatus === 'listo') {
+    return (
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div className="flex items-center">
+          <Truck className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3" />
+          <div>
+            <h3 className="font-medium text-blue-800 dark:text-blue-400">
+              Esperando Repartidor
+            </h3>
+            <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+              Los repartidores pueden tomar este pedido directamente. No es necesario asignar manualmente.
             </p>
           </div>
         </div>
@@ -125,7 +149,7 @@ export default function DeliveryAssignment({
               Sin permisos
             </h3>
             <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-              No tienes permisos para asignar repartidores
+              No tienes permisos para asignar repartidores manualmente
             </p>
           </div>
         </div>

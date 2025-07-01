@@ -63,10 +63,13 @@ export class OrdersService {
     try {
       const { shopId, items, deliveryAddress, notes, paymentMethod } =
         createOrderDto;
-      const clientId = user._id;
+      const clientId = new Types.ObjectId(user._id);
+
+      // Convertir shopId a ObjectId si es string
+      const shopObjectId = new Types.ObjectId(shopId);
 
       // Verificar que la tienda existe
-      const shop = await this.shopModel.findById(shopId);
+      const shop = await this.shopModel.findById(shopObjectId);
       if (!shop) {
         throw new NotFoundException('Tienda no encontrada');
       } // Calcular total y verificar productos
@@ -99,10 +102,10 @@ export class OrdersService {
         // Actualizar stock
         product.stock -= item.quantity;
         await product.save();
-      } // Crear pedido
+      }      // Crear pedido
       const order = new this.orderModel({
         client: clientId,
-        shop: shopId,
+        shop: shopObjectId,
         items: orderItems,
         deliveryAddress: {
           ...deliveryAddress,
@@ -243,32 +246,55 @@ export class OrdersService {
     if (!Types.ObjectId.isValid(shopId)) {
       throw new BadRequestException(`'${shopId}' no es un ObjectId válido.`);
     }
-    const orders = await this.orderModel
-      .find({ shop: shopId })
-      .populate('client', 'name email')
-      .populate('deliveryPerson', 'name email')
-      .populate({
-        path: 'items.product',
-        select: 'name price images description stock',
-        match: { _id: { $exists: true } },
-      })
-      .skip(offset)
-      .limit(limit)
-      .sort({ createdAt: -1 })
-      .exec();
 
-    // Filtrar items con productos null/undefined después del populate
-    const cleanedOrders = orders.map((order) => {
-      const validItems = order.items.filter(
-        (item) => item.product && item.product !== null,
-      );
-      return {
-        ...order.toObject(),
-        items: validItems,
-      };
-    });
+    // Fix any shop fields that are stored as strings instead of ObjectId
+    try {
+      const shopObjectId = new Types.ObjectId(shopId);
 
-    return cleanedOrders;
+      // First, fix any orders where shop is stored as string
+      const updateResult = await this.orderModel.updateMany(
+        { shop: shopId }, // Find orders where shop is a string
+        { $set: { shop: shopObjectId } }, // Convert to ObjectId
+      );        if (updateResult.modifiedCount > 0) {
+          // Fixed some orders with string shop field
+        }
+
+      // Use both string and ObjectId queries to ensure we find all orders
+      const orders = await this.orderModel
+        .find({
+          $or: [
+            { shop: shopObjectId },
+            { shop: shopId }, // Also search for string version just in case
+          ],
+        })
+        .populate('client', 'name email')
+        .populate('deliveryPerson', 'name email')
+        .populate({
+          path: 'items.product',
+          select: 'name price images description stock',
+          match: { _id: { $exists: true } },
+        })
+        .skip(offset)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .exec();
+
+      // Filtrar items con productos null/undefined después del populate
+      const cleanedOrders = orders.map((order) => {
+        const validItems = order.items.filter(
+          (item) => item.product && item.product !== null,
+        );
+        return {
+          ...order.toObject(),
+          items: validItems,
+        };
+      });
+
+      return cleanedOrders;
+    } catch (error) {
+      console.error('Error in findByShop:', error);
+      throw error;
+    }
   }
   async findByDeliveryPerson(
     deliveryPersonId: string,
@@ -408,52 +434,20 @@ export class OrdersService {
       const userShops = await this.shopModel.find({ 
         ownerId: new Types.ObjectId(user._id) 
       });
-      // Debug logging
-      console.log('=== DEBUG ORDER UPDATE AUTHORIZATION ===');
-      console.log('User ID:', user._id);
-      console.log('User role:', user.role);
-      console.log(
-        'User shops found:',
-        userShops.length > 0
-          ? userShops.map(shop => ({
-              id: (shop as any).id,
-              _id: (shop as any)._id,
-              ownerId: (shop as any).ownerId,
-            }))
-          : 'No shops found',
-      );
-      console.log(
-        'Order shop:',
-        order.shop
-          ? {
-              id: order.shop._id,
-              _id: order.shop._id,
-            }
-          : 'No shop in order',
-      );
-      console.log('Order shop type:', typeof order.shop?._id);
-      console.log('User shops count:', userShops.length);
       
       // Fix: Check if the order belongs to ANY of the user's shops
       const userShopIds = userShops.map(shop => (shop as any)._id.toString());
       const isShopOwner = userShops.length > 0 && order.shop && 
         userShopIds.includes(order.shop._id.toString());
-      console.log('Is shop owner check result:', isShopOwner);
-      console.log('Shop ID comparison:', {
-        orderShopId: order.shop?._id?.toString(),
-        userShopIds: userShopIds,
-        isIncluded: userShopIds.includes(order.shop?._id?.toString()),
-      });
 
       const isDeliveryPerson =
         user.role === 'repartidor' &&
         order.deliveryPerson && 
         order.deliveryPerson._id.toString() === user._id.toString();
-      console.log('Is delivery person check result:', isDeliveryPerson);
-      console.log('========================================');
 
       // Restringir permisos: solo locatarios de la tienda y presidentes pueden actualizar estado
       // Los repartidores deben usar el endpoint específico /delivery-status
+      // Los locatarios NO pueden cambiar a "en_entrega" - solo los repartidores pueden hacer eso
       if (!isShopOwner && user.role !== 'presidente') {
         if (user.role === 'repartidor') {
           throw new ForbiddenException(
@@ -467,6 +461,13 @@ export class OrdersService {
             'Solo los locatarios de la tienda pueden actualizar el estado del pedido.',
           );
         }
+      }
+
+      // Verificar que los locatarios no pueden cambiar a "en_entrega"
+      if (user.role === 'locatario' && status === 'en_entrega') {
+        throw new ForbiddenException(
+          'Los locatarios no pueden cambiar el estado a "en_entrega". Solo los repartidores pueden tomar pedidos.',
+        );
       }
 
       order.status = status;
@@ -576,17 +577,12 @@ export class OrdersService {
         throw new BadRequestException('Usuario no es repartidor activo');
       } 
       
-      // Verificar permisos (solo dueño de tienda o presidente) - OBTENER TODAS las tiendas
-      const userShops = await this.shopModel.find({ 
-        ownerId: new Types.ObjectId(user._id) 
-      });
-      
-      const userShopIds = userShops.map(shop => (shop as any)._id.toString());
-      const isShopOwner = userShops.length > 0 && 
-        userShopIds.includes(order.shop.toString());
-
-      if (!isShopOwner && user.role !== 'presidente') {
-        throw new ForbiddenException('No autorizado para asignar repartidores');
+      // Verificar permisos - Solo presidente puede asignar repartidores manualmente
+      // Los locatarios no pueden asignar repartidores, solo los repartidores pueden tomar pedidos
+      if (user.role !== 'presidente') {
+        throw new ForbiddenException(
+          'Solo los presidentes pueden asignar repartidores manualmente. Los repartidores deben tomar los pedidos por sí mismos.',
+        );
       }
 
       order.deliveryPerson = new Types.ObjectId(deliveryPersonId);
@@ -715,25 +711,19 @@ export class OrdersService {
 
       // Encontrar las tiendas del usuario
       const userObjectId = new Types.ObjectId(user._id.toString());
-      console.log(`🔍 Finding shops for user ID: ${userObjectId}`);
       
       const userShops = await this.shopModel.find({ ownerId: userObjectId });
-      console.log(`🏪 User shops found: ${userShops.length}`, userShops.map(s => ({ id: (s as any)._id.toString(), name: (s as any).name })));
 
       if (userShops.length === 0) {
-        console.log('❌ No shops found for user');
         return [];
       }
 
       const shopIds = userShops.map((shop) => shop._id as Types.ObjectId);
-      console.log(`📋 Shop IDs to query: ${shopIds.map(id => id.toString())}`);
 
       // Buscar TODOS los pedidos (todos los status) de las tiendas del usuario
       const query = {
         shop: { $in: shopIds },
       };
-
-      console.log(`🔍 Order query:`, query);
 
       const orders = await this.orderModel
         .find(query)
@@ -745,11 +735,6 @@ export class OrdersService {
         .limit(limit)
         .skip(calculatedOffset)
         .exec();
-
-      console.log(`📦 Orders found: ${orders.length}`);
-      orders.forEach(order => {
-        console.log(`  - Order ${order._id}: Shop ${order.shop?._id} (${(order.shop as any)?.name})`);
-      });
 
       // Filtrar items con productos null/undefined después del populate
       const cleanedOrders = orders.map((order) => {
@@ -1159,6 +1144,68 @@ export class OrdersService {
       };
     } catch (error) {
       handleExceptions(error, 'el pedido', 'tomar');
+    }
+  }
+
+  // Maintenance function to fix ObjectId fields stored as strings
+  async fixObjectIdFields() {
+    try {
+      const results = {
+        clientFixed: 0,
+        shopFixed: 0,
+        deliveryPersonFixed: 0,
+      };
+
+      // Fix client fields
+      const clientOrders = await this.orderModel.find({ 
+        client: { $type: "string" } 
+      }).exec();
+
+      for (const order of clientOrders) {
+        if (Types.ObjectId.isValid(order.client as any)) {
+          await this.orderModel.updateOne(
+            { _id: order._id },
+            { $set: { client: new Types.ObjectId(order.client as any) } }
+          );
+          results.clientFixed++;
+        }
+      }
+
+      // Fix shop fields
+      const shopOrders = await this.orderModel.find({ 
+        shop: { $type: "string" } 
+      }).exec();
+
+      for (const order of shopOrders) {
+        if (Types.ObjectId.isValid(order.shop as any)) {
+          await this.orderModel.updateOne(
+            { _id: order._id },
+            { $set: { shop: new Types.ObjectId(order.shop as any) } }
+          );
+          results.shopFixed++;
+        }
+      }
+
+      // Fix deliveryPerson fields
+      const deliveryOrders = await this.orderModel.find({ 
+        deliveryPerson: { $type: "string", $ne: null } 
+      }).exec();
+
+      for (const order of deliveryOrders) {
+        if (order.deliveryPerson && Types.ObjectId.isValid(order.deliveryPerson as any)) {
+          await this.orderModel.updateOne(
+            { _id: order._id },
+            { $set: { deliveryPerson: new Types.ObjectId(order.deliveryPerson as any) } }
+          );
+          results.deliveryPersonFixed++;
+        }
+      }
+
+      console.log('ObjectId fix results:', results);
+      return results;
+    } catch (error) {
+      console.error('Error fixing ObjectId fields:', error);
+      throw error;
     }
   }
 }

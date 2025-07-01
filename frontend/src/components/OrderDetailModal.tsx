@@ -3,8 +3,6 @@ import { Order } from '../types'
 import OrderStatusManager from './OrderStatusManager'
 import DeliveryAssignment from './DeliveryAssignment'
 
-type OrderStatus = 'pendiente' | 'confirmado' | 'preparando' | 'listo' | 'en_entrega' | 'entregado' | 'cancelado'
-
 interface OrderDetailModalProps {
   order: Order | null
   isOpen: boolean
@@ -394,18 +392,52 @@ export default function OrderDetailModal({
                 />
               </div>
 
-              {/* Delivery Assignment */}
+              {/* Delivery Assignment / Info */}
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <DeliveryAssignment
-                  currentDeliveryPerson={typeof order.deliveryPersonId === 'object' && order.deliveryPersonId ? {
-                    _id: order.deliveryPersonId._id,
-                    name: order.deliveryPersonId.name,
-                    email: order.deliveryPersonId.email
-                  } : undefined}
-                  onAssign={handleAssignDelivery}
-                  canAssign={canAssignDelivery}
-                  orderStatus={order.status}
-                />
+                {userRole === 'comprador' ? (
+                  // For buyers, show delivery person info as read-only
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center">
+                      <User className="w-5 h-5 mr-2" />
+                      Repartidor
+                    </h4>
+                    {typeof order.deliveryPersonId === 'object' && order.deliveryPersonId ? (
+                      <div className="space-y-1">
+                        <p className="text-gray-900 dark:text-white font-medium">
+                          {order.deliveryPersonId.name}
+                        </p>
+                        {order.deliveryPersonId.email && (
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            {order.deliveryPersonId.email}
+                          </p>
+                        )}
+                        <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                          Asignado
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-600 dark:text-gray-300">Sin repartidor</span>
+                        <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400">
+                          No asignado
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // For shop owners and admin, show delivery assignment component
+                  <DeliveryAssignment
+                    currentDeliveryPerson={typeof order.deliveryPersonId === 'object' && order.deliveryPersonId ? {
+                      _id: order.deliveryPersonId._id,
+                      name: order.deliveryPersonId.name,
+                      email: order.deliveryPersonId.email
+                    } : undefined}
+                    onAssign={handleAssignDelivery}
+                    canAssign={canAssignDelivery}
+                    orderStatus={order.status}
+                    userRole={userRole}
+                  />
+                )}
               </div>
 
               {/* Shop Info */}

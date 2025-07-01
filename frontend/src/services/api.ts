@@ -265,4 +265,10 @@ export const apiService = {
     const { data } = await api.patch(`/orders/${orderId}/delivery-status`)
     return data
   },
+
+  // Admin function to fix ObjectId fields stored as strings
+  fixObjectIds: async () => {
+    const { data } = await api.post('/orders/fix-objectids')
+    return data
+  },
 }
