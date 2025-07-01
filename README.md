@@ -14,6 +14,45 @@ Este es el proyecto final del curso de Introducción a Desarrollo Web Móvil, de
 Puedes acceder a la aplicación en funcionamiento en el siguiente enlace:
 [https://frontend-neighborhood-shops-project-production.up.railway.app/](https://frontend-neighborhood-shops-project-production.up.railway.app/)
 
+## Credenciales de Prueba
+Para facilitar la evaluación del proyecto, puedes utilizar las siguientes credenciales de prueba:
+
+### **Presidente (Administrador General)**
+- **Email:** jose@gmail.com
+- **Contraseña:** Abcd1234
+
+### **Locatario (Dueño de Tienda)**
+- **Email:** anais@gmail.com
+- **Contraseña:** Abcd1234
+
+### **Comprador (Cliente)**
+- **Email:** kira@gmail.com
+- **Contraseña:** Abcd1234
+
+### **Repartidor (Delivery)**
+- **Email:** andres@gmail.com
+- **Contraseña:** Abcd1234
+
+## Variables de Entorno para Desarrollo Local
+Para que el profesor pueda probar el proyecto localmente, debe crear un archivo `.env` en el directorio `backend/` con el siguiente contenido:
+
+```env
+PORT=8080
+PORT_TEST=3000
+JWT_SECRET=Est3EsMISE3DsecretoATM
+
+MONGODB_URI=mongodb://mongo:nVMUVvFYGLdngixOzEgYqwobVwKdKtYP@switchyard.proxy.rlwy.net:50282/
+MONGODB_TEST=mongodb://UserATMDB:MySecretPassWordProyectoATM@localhost:27017/ATMBD?authSource=admin
+
+DEFAULT_LIMIT=10
+DEFAULT_OFFSET=0
+```
+
+**Nota:** Estas variables incluyen la conexión directa a la base de datos en la nube, por lo que no es necesario configurar MongoDB localmente.
+
+## Base de Datos
+El proyecto utiliza **MongoDB Atlas** (MongoDB en la nube) como base de datos principal, lo que garantiza alta disponibilidad y escalabilidad sin necesidad de configuración local de base de datos.
+
 ## Estructura del Proyecto
 Este proyecto está dividido en dos partes principales:
 - **Backend**: API desarrollada con NestJS
@@ -67,6 +106,13 @@ Este proyecto está dividido en dos partes principales:
 #### **WebSockets y Tiempo Real**
 - **@nestjs/websockets** - WebSockets en NestJS
 - **Socket.io** - Comunicación en tiempo real
+- **Real-time Notifications** - Sistema de notificaciones en tiempo real para pedidos
+
+#### **Sistema de Entregas Avanzado**
+- **Asignación Automática de Repartidores** - Sistema inteligente de asignación
+- **Gestión de Disponibilidad** - Control de estado de repartidores
+- **Toma de Pedidos Self-Service** - Repartidores pueden tomar pedidos disponibles
+- **Tracking en Tiempo Real** - Seguimiento completo del estado de entregas
 
 #### **Validación y Documentación**
 - **@nestjs/swagger** - Documentación API automática
@@ -213,10 +259,26 @@ type OrderStatus =
 - Actualizaciones automáticas de estado
 - Tracking de pedidos en tiempo real
 
-#### **Gestión de Entregas**
-- Asignación automática de repartidores
-- Información de ubicación y vehículo
-- Estado de disponibilidad del repartidor
+#### **Gestión de Entregas Avanzada**
+- **Asignación Manual y Automática** de repartidores
+- **Sistema Self-Service** - Repartidores pueden tomar pedidos disponibles
+- **Panel de Pedidos Disponibles** - Vista en tiempo real de pedidos listos para entrega
+- **Gestión de Disponibilidad** - Control automático del estado de repartidores
+- **Información Completa** de ubicación, vehículo y contacto
+- **Historial Completo** de entregas por repartidor
+- **Notificaciones en Tiempo Real** para asignaciones y cambios de estado
+
+#### **Nuevas Funcionalidades de Entrega (Actualización 2025)**
+- **Panel de Repartidor Mejorado** - Dashboard completo con métricas y estadísticas
+- **Toma de Pedidos Autónoma** - Los repartidores pueden seleccionar pedidos disponibles
+- **Sistema de Disponibilidad Inteligente** - Gestión automática del estado de repartidores
+- **API Endpoints Especializados** para operaciones de entrega:
+  - `getAvailableOrdersForDelivery()` - Pedidos listos para entrega
+  - `takeOrder()` - Tomar un pedido disponible
+  - `markAsDelivered()` - Marcar como entregado
+  - `getAllMyDeliveries()` - Historial completo de entregas
+- **Notificaciones Push** para nuevos pedidos disponibles
+- **Métricas de Rendimiento** por repartidor
 
 #### **Panel de Administración**
 - Dashboard para locatarios y presidente
@@ -233,10 +295,12 @@ type OrderStatus =
 2. **Componentes llaman** a servicios API ([`apiService`](frontend/src/services/api.ts))
 3. **API hace peticiones** HTTP al backend NestJS
 4. **Controllers** validan y delegan a Services
-5. **Services** ejecutan lógica y acceden a MongoDB
-6. **WebSocket Gateway** emite eventos en tiempo real
+5. **Services** ejecutan lógica y acceden a MongoDB Atlas
+6. **WebSocket Gateway** emite eventos en tiempo real a todos los stakeholders
 7. **Frontend recibe** actualizaciones vía [`useWebSocket`](frontend/src/hooks/useWebSocket.ts)
 8. **Estado se actualiza** automáticamente en la UI
+9. **Sistema de notificaciones** informa cambios a usuarios relevantes
+10. **Repartidores reciben** notificaciones de pedidos disponibles automáticamente
 
 ### **Base de Datos - Modelos Principales**
 
@@ -277,10 +341,12 @@ export class Shop extends Document {
 ```
 
 ### **Deployment y DevOps**
-- **Railway** - Plataforma de deployment para ambos servicios
-- **Docker Compose** - Para desarrollo local de MongoDB
+- **Railway** - Plataforma de deployment para ambos servicios (frontend y backend)
+- **MongoDB Atlas** - Base de datos en la nube (MongoDB Database-as-a-Service)
+- **Docker Compose** - Para desarrollo local opcional
 - **Environment Variables** - Configuración por entorno
 - **Vite Build** - Optimización del frontend para producción
+- **Continuous Deployment** - Deploy automático desde repositorio Git
 
 ### **Seeds y Datos de Prueba**
 El sistema incluye datos de prueba completos:
@@ -294,13 +360,16 @@ El sistema incluye datos de prueba completos:
 
 ### Prerrequisitos
 - Node.js 18+
-- MongoDB (local o Docker)
 - npm o yarn
+- *(MongoDB Atlas ya configurado en la nube - no requiere instalación local)*
 
 ### Backend
 ```bash
 cd backend
 npm install
+
+# Crear archivo .env en el directorio backend con las variables mostradas al inicio del README
+
 npm run start:dev
 ```
 
@@ -311,11 +380,19 @@ npm install
 npm run dev
 ```
 
-### Base de Datos
+### Configuración de Base de Datos
+La base de datos **MongoDB Atlas** ya está configurada y funcionando en la nube. No es necesario instalar MongoDB localmente ni ejecutar Docker Compose para el desarrollo.
+
+Para desarrollo local opcional con MongoDB local:
 ```bash
-# En el directorio backend
+# En el directorio backend (opcional)
 docker-compose up -d
 ```
+
+### Acceso a la Aplicación
+- **Frontend:** http://localhost:5173
+- **Backend:** http://localhost:8080
+- **Documentación API:** http://localhost:8080/api/docs (Swagger)
 
 Esta arquitectura proporciona escalabilidad, mantenibilidad y una clara separación de responsabilidades entre las diferentes capas del sistema, permitiendo un desarrollo ágil y fácil mantenimiento del código.
 
