@@ -104,7 +104,7 @@ export default function DashboardPage() {
 
               {/* Usuarios (solo presidente) */}
               {user.role === "presidente" && (
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <Link to="/admin/usuarios" className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
                       <Users className="w-6 h-6 text-red-600 dark:text-red-400" />
@@ -114,7 +114,7 @@ export default function DashboardPage() {
                       <p className="text-gray-600 dark:text-gray-300 text-sm">Gestionar usuarios</p>
                     </div>
                   </div>
-                </div>
+                </Link>
               )}</div>
           </div>
         )}        {/* Locatario Dashboard */}

@@ -115,11 +115,6 @@ export default function CrearTiendaPage() {
         navigate("/dashboard")
       }
     } catch (err: any) {
-      console.error("=== ERROR DETAILS ===")
-      console.error("Error object:", err)
-      console.error("Error message:", err.message)
-      console.error("Error response:", err.response)
-      console.error("====================")
       setError(err.message || `Error al ${isEditing ? 'actualizar' : 'crear'} la tienda`)
     } finally {
       setIsLoading(false)
