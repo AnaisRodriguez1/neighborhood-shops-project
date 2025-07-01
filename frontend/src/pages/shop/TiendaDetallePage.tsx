@@ -228,7 +228,7 @@ export default function TiendaDetallePage() {
                     <div className="flex items-center space-x-2 mt-2">
                       <div className="flex items-center space-x-1">
                         <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                        <span className="font-medium text-gray-900 dark:text-white">{shop.rating.toFixed(1)}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{shop.rating}</span>
                       </div>
                       <span className="text-gray-500 dark:text-gray-400">•</span>
                       <span className="text-gray-600 dark:text-gray-300">{products.length} productos</span>
